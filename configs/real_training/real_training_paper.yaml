@@ -1,0 +1,24 @@
+schema_version: 1
+profile: paper_downstream
+raw_data: runs/real_training/imported/raw.h5
+encoder: archive/sim_pretrain/normal_mu1p2_continue400_v1/encoder.pt
+output_dir: runs/real_training/real_training_v1
+wrench:
+  frame: ft_frame local
+  reference_point: ft_frame origin
+  compensation: sensor_bias_only_gravity_retained
+processing:
+  max_age_s: 0.02
+  max_gap_s: 0.02
+  filter_order: 2
+  filter_cutoff_hz: 1.0
+training:
+  device: cpu
+  threads: 1
+  seed: 42
+  learning_rate: 0.001
+  xy_batch_size: 8
+  ft_batch_size: 32
+  xy_epochs: 10000
+  ft_epochs: 2000
+  checkpoint_every: 100

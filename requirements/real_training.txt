@@ -1,0 +1,6 @@
+# Hardware-independent training. Install a suitable PyTorch >= 2.6 build separately.
+numpy==1.26.4
+scipy==1.15.3
+h5py==3.16.0
+PyYAML==6.0.2
+matplotlib==3.10.8

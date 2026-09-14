@@ -1,0 +1,2 @@
+-r real_training.txt
+-r robot_control.txt

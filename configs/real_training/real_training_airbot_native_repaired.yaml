@@ -1,0 +1,24 @@
+schema_version: 1
+profile: airbot_native_offline
+raw_data: archive/real_training/raw_data/real_training/airbot_native_20260910/raw.h5
+encoder: archive/sim_pretrain/sponge_vae_repair_v1/encoder.pt
+output_dir: runs/real_training/real_training_airbot_native_repaired_v1
+wrench:
+  frame: sensor local
+  reference_point: sensor origin
+  compensation: raw_sensor_load_retained
+processing:
+  max_age_s: 0.02
+  max_gap_s: 0.02
+  filter_order: 2
+  filter_cutoff_hz: 1.0
+training:
+  device: cpu
+  threads: 1
+  seed: 42
+  learning_rate: 0.001
+  xy_batch_size: 8
+  ft_batch_size: 32
+  xy_epochs: 10000
+  ft_epochs: 2000
+  checkpoint_every: 100

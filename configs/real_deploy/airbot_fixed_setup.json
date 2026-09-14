@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "mode": "fixed_setup_tared_v1",
+  "scope": "same_sponge_same_installation_only",
+  "training_config": "configs/real_training/real_training_programmed_wide1200.yaml",
+  "policy": "runs/real_training/training_programmed_wide1200_v1/policy.pt",
+  "policy_sha256": "7684df76171cc3db73bb1468c16dda8d72538ecf1896253eb8bd3c1c7066dc9d",
+  "collection_session": "runs/real_training/programmed_demonstrations/direct_start_session_004",
+  "collection_session_sha256": "588df9bfb4007f53bf0b362486f9c9bbd4165010e17b3251664084661ac73a14",
+  "same_hardware_and_sponge_confirmed": true,
+  "confirmation_note": "2026-09-13: Operator confirmed unchanged hardware and same sponge, accepted the scoped encoder exception, requested motion tracking and orientation errors be recorded only, and confirmed all other listed onsite conditions. This is operator confirmation, not software proof of hardware validation or calibration.",
+  "encoder_quality_exception": {
+    "scope": "same_sponge_same_installation_only",
+    "policy_sha256": "7684df76171cc3db73bb1468c16dda8d72538ecf1896253eb8bd3c1c7066dc9d",
+    "encoder_sha256": "7014af1fd7779ce420761b4e8f1906e145386f3d2470293d1c9c7d1a377450d4",
+    "collection_session_sha256": "588df9bfb4007f53bf0b362486f9c9bbd4165010e17b3251664084661ac73a14",
+    "reason": "Operator explicitly accepts encoder collapse for the same sponge and unchanged installation; no generalization or calibration claim. Separately approved motion tracking/orientation record-only policies do not disable load, depth, speed, deadline or start/return checks."
+  },
+  "initialization": "nominal_10mm_during_first_2s",
+  "max_cartesian_speed_m_s": 0.05,
+  "max_delta_h_m": 0.003,
+  "max_tracking_error_m": 0.005,
+  "orientation_error_limit_rad": 0.02,
+  "tracking_error_policy": "record-only",
+  "orientation_error_policy": "record-only",
+  "motion_limits_confirmed": true,
+  "startup_contact_confirmed": true,
+  "policy_path_confirmed": true,
+  "physical_estop_verified": true,
+  "support_handoff_confirmed": true,
+  "server_no_return_verified": true,
+  "replay_report": "runs/real_deploy/fixed_setup_wide1200_replay_v3/report.json"
+}

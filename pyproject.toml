@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adaptive-wiping"
+version = "0.1.0"
+description = "Adaptive wiping simulation, sensing, offline learning and attended robot control"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+sensor = ["numpy", "pyserial", "matplotlib"]
+robot = ["numpy", "scipy", "PyYAML"]
+training = ["numpy", "scipy", "PyYAML", "h5py", "torch>=2.6", "matplotlib"]
+simulation = ["numpy", "scipy", "PyYAML", "h5py", "torch>=2.6", "matplotlib", "mujoco", "Pillow"]
+
+[tool.setuptools.packages.find]
+include = ["scripts*"]
+exclude = ["scripts.sim_pretrain.robosuite*"]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["scripts/sim_pretrain/robosuite"]

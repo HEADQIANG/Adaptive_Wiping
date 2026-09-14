@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "mode": "contact-no-ft",
+  "calibration_confirmed": false,
+  "no_force_contact_confirmed": false,
+  "calibration_id": null,
+  "robot_sn": "PZ60C02603000943",
+  "expected_eef_type": "NULL",
+  "sdk_frame_and_tool_note": null,
+  "initial_pose_file": "archive/real_training/real_robot/contact_motion_start_001.json",
+  "table_normal_sdk": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "slide_direction_sdk": [
+    0.0,
+    1.0,
+    0.0
+  ],
+  "initial_gap_m": 0.001,
+  "sponge_thickness_m": 0.028,
+  "verified_compression_allowance_m": 0.02,
+  "position_error_limit_m": 0.0005,
+  "contact_geometry_uncertainty_m": null,
+  "compression_reserve_m": 0.00025,
+  "joint_min_rad": null,
+  "joint_max_rad": null,
+  "joint_speed_limit_rad_s": 0.2,
+  "joint_current_limits": null
+}

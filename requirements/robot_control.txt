@@ -1,0 +1,5 @@
+# Install in the existing arm-sdk==5.2.2 environment; do not replace the SDK.
+numpy>=1.23,<3
+pyserial>=3.5,<4
+scipy>=1.10,<2
+PyYAML>=6,<7

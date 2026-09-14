@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "demonstrations": 8,
+  "duration_s": 10.0,
+  "sample_hz": 100,
+  "training_hz": 2.5,
+  "sponge_id": "normal",
+  "surface_id": "training_inclined_01",
+  "exploration_id": "normal_exp",
+  "robot_sn": "PZ60C02603000943",
+  "expected_eef_type": "NULL",
+  "sensor_port": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AG0KL3D4-if00-port0",
+  "sensor_bias_si": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "bias_note": "Raw load retained; electronic bias not independently calibrated. Never tare in contact.",
+  "setup_confirmed": false,
+  "workspace_force_policy": "record-only",
+  "setup_note": "User requested no workspace or force/torque thresholds. Onsite readiness must be confirmed interactively with DRAG; no calibration or safety approval is implied.",
+  "max_force_n": null,
+  "max_torque_nm": null,
+  "joint_speed_policy": "record-only",
+  "joint_speed_limit_rad_s": null,
+  "joint_min_rad": [
+    -3.141592653589793,
+    -2.9670597283903604,
+    -0.08726646259971647,
+    -3.0106929596902186,
+    -1.8325957145940461,
+    -3.001966313430247
+  ],
+  "joint_max_rad": [
+    2.0943951023931953,
+    0.17453292519943295,
+    3.141592653589793,
+    3.0106929596902186,
+    1.8325957145940461,
+    3.001966313430247
+  ]
+}

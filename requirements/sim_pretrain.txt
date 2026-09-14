@@ -1,0 +1,7 @@
+# Install PyTorch separately with the CPU/CUDA build appropriate for your machine.
+numpy==1.26.4
+scipy==1.15.3
+mujoco==3.9.0
+h5py==3.16.0
+PyYAML==6.0.2
+matplotlib==3.10.8

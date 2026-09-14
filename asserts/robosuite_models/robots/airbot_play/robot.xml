@@ -1,0 +1,83 @@
+<?xml version="1.0" ?>
+<mujoco model="airbot_play">
+  <compiler angle="radian" autolimits="true"/>
+  <asset>
+    <material name="AirbotBlack" specular="0.5" shininess="0.5" rgba="0.0011 0.0011 0.0011 1"/>
+    <material name="AirbotWhite" specular="0.5" shininess="0.5" rgba="0.9285 0.9285 0.9285 1"/>
+    <material name="AirbotBase" specular="0.5" shininess="0.5" rgba="0.6 1 1 1"/>
+    <mesh name="airbot_arm_base_0" file="meshes/arm_base_0.obj"/>
+    <mesh name="airbot_arm_base_1" file="meshes/arm_base_1.obj"/>
+    <mesh name="airbot_link1" file="meshes/link1.obj"/>
+    <mesh name="airbot_link2_0" file="meshes/link2_0.obj"/>
+    <mesh name="airbot_link2_1" file="meshes/link2_1.obj"/>
+    <mesh name="airbot_link3_0" file="meshes/link3_0.obj"/>
+    <mesh name="airbot_link3_1" file="meshes/link3_1.obj"/>
+    <mesh name="airbot_link4" file="meshes/link4.obj"/>
+    <mesh name="airbot_link5_0" file="meshes/link5_0.obj"/>
+    <mesh name="airbot_link5_1" file="meshes/link5_1.obj"/>
+    <mesh name="airbot_link6" file="meshes/link6.obj"/>
+    <mesh name="airbot_camera_stand" file="meshes/camera_stand.obj"/>
+  </asset>
+  <worldbody>
+    <body name="base" pos="0 0 0">
+      <camera mode="fixed" name="robotview" pos="1 0 0.4" quat="0.653 0.271 0.271 0.653"/>
+      <site name="right_center" pos="0 0 0" size="0.01" rgba="1 0.3 0.3 1" group="2"/>
+      <!-- Fixed base: link masses are defined on their moving bodies below. -->
+      <inertial pos="0 0 0" mass="0" diaginertia="0 0 0"/>
+      <geom type="mesh" mesh="airbot_arm_base_0" material="AirbotBase" group="1" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="airbot_arm_base_1" material="AirbotBlack" group="1" contype="0" conaffinity="0"/>
+      <geom type="box" pos="-0.02 0 0.005" size="0.0806 0.1375 0.0025" euler="0 0 1.5708" rgba="0.2 0.2 0.2 1"/>
+      <body name="link1" pos="0 0 0.1172">
+        <inertial pos="7.9126e-05 -0.002527 -0.0041359" quat="0.696716 0.716558 0.0238919 -0.0236876" mass="0.54639" diaginertia="0.000346294 0.000325437 0.000286269"/>
+        <joint name="joint1" axis="0 0 1" range="-3.151 2.089" damping="0.2" frictionloss="15"/>
+        <geom type="mesh" mesh="airbot_link1" material="AirbotBlack" group="1" contype="0" conaffinity="0"/>
+        <body name="link2" quat="0.135866 0.135867 -0.69393 0.693932">
+          <inertial pos="0.22493 0.0047721 0.008023" quat="-0.210875 0.632473 -0.273056 0.693506" mass="0.64621" diaginertia="0.00516535 0.00505042 0.000418626"/>
+          <joint name="joint2" axis="0 0 1" range="-2.963 0.181" damping="0.2" frictionloss="15"/>
+          <geom type="box" pos="0.08 0.015 0" size="0.11 0.03 0.04" euler="0 0 0.15" rgba="0.3 0.3 0.3 1"/>
+          <geom type="box" pos="0.235 0.015 0" size="0.065 0.025 0.045" euler="0 0 -0.3" rgba="0.3 0.3 0.3 1"/>
+          <geom type="mesh" mesh="airbot_link2_0" material="AirbotBlack" group="1" contype="0" conaffinity="0"/>
+          <geom type="mesh" mesh="airbot_link2_1" material="AirbotWhite" group="1" contype="0" conaffinity="0"/>
+          <body name="link3" pos="0.27009 0 0" quat="0.192144 0 0 -0.981367">
+            <inertial pos="0.16813 0 0.0031184" mass="0.26829" diaginertia="0.0031527 0.0030951 0.000239403"/>
+            <joint name="joint3" axis="0 0 1" range="-0.094 3.161" damping="0.2" frictionloss="15"/>
+            <geom type="box" pos="0.13 0 0" size="0.13 0.025 0.025" rgba="0.3 0.3 0.3 1"/>
+            <geom type="mesh" mesh="airbot_link3_0" material="AirbotBlack" group="1" contype="0" conaffinity="0"/>
+            <geom type="mesh" mesh="airbot_link3_1" material="AirbotWhite" group="1" contype="0" conaffinity="0"/>
+            <body name="link4" pos="0.29015 0 0" quat="0 0.707105 0 0.707108">
+              <inertial pos="0 0.0004 -0.03228" mass="0.34876" diaginertia="0.0004236 0.000412 0.0001268"/>
+              <joint name="joint4" axis="0 0 1" range="-3.012 3.012" damping="0.1" frictionloss="5"/>
+              <geom type="mesh" mesh="airbot_link4" material="AirbotBlack" group="1" contype="0" conaffinity="0"/>
+              <body name="link5" quat="0.707105 0.707108 0 0">
+                <inertial pos="0 0.02615 0.0025" mass="0.36132" diaginertia="0.0004677 0.0004329 0.0001782"/>
+                <joint name="joint5" axis="0 0 1" range="-1.859 1.859" damping="0.1" frictionloss="5"/>
+                <geom type="mesh" mesh="airbot_link5_0" material="AirbotBlack" group="1" contype="0" conaffinity="0"/>
+                <geom type="mesh" mesh="airbot_link5_1" material="AirbotWhite" group="1" contype="0" conaffinity="0"/>
+                <body name="link6" pos="0 0.23645 0" quat="0.499998 -0.5 0.5 0.500002">
+                  <inertial pos="-0.0047 0 -0.12293" mass="0.53855" diaginertia="5e-05 5e-05 3.85e-05"/>
+                  <joint name="joint6" axis="0 0 1" range="-3.017 3.017" damping="0.1" frictionloss="5"/>
+                  <geom type="box" pos="0 0 -0.07" size="0.025 0.08 0.015" rgba="0.3 0.3 0.3 1"/>
+                  <geom type="mesh" mesh="airbot_link6" material="AirbotBlack" group="1" contype="0" conaffinity="0"/>
+                  <geom type="mesh" mesh="airbot_camera_stand" material="AirbotBlack" group="1" contype="0" conaffinity="0"/>
+                  <body name="eye_arm_mount" pos="-0.105 0 -0.12" euler="3.1416 0 1.5708">
+                    <camera name="eye_arm" mode="fixed" euler="-0.5236 0 0" fovy="72.53765"/>
+                  </body>
+                  <site name="endpoint" pos="0 0 0.015" euler="0 -1.5708 0" size="0.005"/>
+                  <body name="right_hand" pos="0 0 0.015" quat="1 0 0 0"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <position name="joint1" joint="joint1" ctrlrange="-3.151 2.089" kp="100"/>
+    <position name="joint2" joint="joint2" ctrlrange="-2.963 0.181" kp="100"/>
+    <position name="joint3" joint="joint3" ctrlrange="-0.094 3.161" kp="100"/>
+    <position name="joint4" joint="joint4" ctrlrange="-3.012 3.012" kp="50"/>
+    <position name="joint5" joint="joint5" ctrlrange="-1.859 1.859" kp="50"/>
+    <position name="joint6" joint="joint6" ctrlrange="-3.017 3.017" kp="30"/>
+  </actuator>
+</mujoco>

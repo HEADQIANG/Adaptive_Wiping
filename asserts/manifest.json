@@ -1,0 +1,336 @@
+{
+  "schema_version": 1,
+  "scope": "runtime MJCF assets and inertia reference; vendor originals retained",
+  "files": [
+    {
+      "source": "robosuite/robosuite/models/assets/arenas/table_arena.xml",
+      "path": "asserts/robosuite_models/arenas/table_arena.xml",
+      "size": 4351,
+      "sha256": "855c2fbc0758c6b7cf3ff8b55a12032a9075ed0807e13ef463ccfbf1fb9d327e"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/base.xml",
+      "path": "asserts/robosuite_models/base.xml",
+      "size": 476,
+      "sha256": "6b24417576ecc2300a52b1643da0c1e7edeac68d434fbdd4d11fc656dd302f9c"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/bases/meshes/rethink_mount/pedestal.stl",
+      "path": "asserts/robosuite_models/bases/meshes/rethink_mount/pedestal.stl",
+      "size": 1647684,
+      "sha256": "f96ff12bfb347c77580e4392556b15e47ef7228711c45b0f1193b100af22866a"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/bases/null_mount.xml",
+      "path": "asserts/robosuite_models/bases/null_mount.xml",
+      "size": 126,
+      "sha256": "7d77d0a1fae81041a976165ebceaf1a91145a7b1924264d5894ae57a0c45bedc"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/bases/rethink_mount.xml",
+      "path": "asserts/robosuite_models/bases/rethink_mount.xml",
+      "size": 1546,
+      "sha256": "7a7b2593020c40c7c36e1794e131e9bb2cb824778aaf39ee9c32421ad6f85ab0"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/grippers/wiping_gripper.xml",
+      "path": "asserts/robosuite_models/grippers/wiping_gripper.xml",
+      "size": 9620,
+      "sha256": "c1b338bd5fb15deee9087f3deb4c3bf554cdae239d4bbc12211e9855fedea4f4"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/arm_base_0.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/arm_base_0.obj",
+      "size": 62028,
+      "sha256": "a8f4b3bd86b7b42f484f80b0d8abaf05bc32c3e769874539cd66db045291f2bc"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/arm_base_1.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/arm_base_1.obj",
+      "size": 280815,
+      "sha256": "ef0ef26d2cf82e2fa82f8147ef47d37bdc76957e0c0c227a63d15cf38bb18d8d"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/camera_stand.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/camera_stand.obj",
+      "size": 62979,
+      "sha256": "176ac7b8b738eef11e4889876ab5b261c7a984a744d29149aeaea17895da1026"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/link1.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/link1.obj",
+      "size": 210649,
+      "sha256": "d448e9742660b9f96f3d9510f23f94c8079aa52a0697aa21756094fc18688c2a"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/link2_0.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/link2_0.obj",
+      "size": 346145,
+      "sha256": "fd147d883a2af6484ca8c4060eaf2d2a03d70e89598f367d143e15298b3a0717"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/link2_1.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/link2_1.obj",
+      "size": 318086,
+      "sha256": "b148bceb4e4277a7ce753ef904103df43302789f9b64d386fd24ded0232871b8"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/link3_0.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/link3_0.obj",
+      "size": 337406,
+      "sha256": "125db0b6739af668565a20dcfff16f9aa8202388b83e419d75520a7cf1d58edd"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/link3_1.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/link3_1.obj",
+      "size": 105310,
+      "sha256": "962261b0c1713e575cbcf3dfb4833b589bb0c35f2ffd395398e8e297d9126c1b"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/link4.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/link4.obj",
+      "size": 292135,
+      "sha256": "890ae19b7f80cd60ed44611e8be4da97f631acb44f5b9fee18668890c2c2603f"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/link5_0.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/link5_0.obj",
+      "size": 311640,
+      "sha256": "d1415fee7d55699d3c7650633e1e5f8d97d8d44396b26e1b9758706df207b85b"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/link5_1.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/link5_1.obj",
+      "size": 10785,
+      "sha256": "364754f401e71b72ede3148e49385a7571c5ad07d230ab9c6295d1a85c2dd010"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/meshes/link6.obj",
+      "path": "asserts/robosuite_models/robots/airbot_play/meshes/link6.obj",
+      "size": 464182,
+      "sha256": "82b583ceb042427ed87afa714177a7377c17487689f9af5a03fd386f724b83d4"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/airbot_play/robot.xml",
+      "path": "asserts/robosuite_models/robots/airbot_play/robot.xml",
+      "size": 6222,
+      "sha256": "60d2d8e938f71d8f6cea71d2074be669e316e75488b874e7c7ab4ad90bfde41f"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/meshes/base.stl",
+      "path": "asserts/robosuite_models/robots/ur5e/meshes/base.stl",
+      "size": 21084,
+      "sha256": "9a145e0d46f2130afdf2a2e8825a00a929870c4c3d6d8e4d1adc5f04db3aac1b"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/meshes/forearm.stl",
+      "path": "asserts/robosuite_models/robots/ur5e/meshes/forearm.stl",
+      "size": 53284,
+      "sha256": "2e7423cab807c34160ec4f770daee5e747d70e777eb01b7beeace2b8c5751816"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/meshes/shoulder.stl",
+      "path": "asserts/robosuite_models/robots/ur5e/meshes/shoulder.stl",
+      "size": 70084,
+      "sha256": "ceb92532177daa77682f5fbd628e01c2137d168f949a7a706ce1dabe9f002387"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/meshes/upperarm.stl",
+      "path": "asserts/robosuite_models/robots/ur5e/meshes/upperarm.stl",
+      "size": 99684,
+      "sha256": "ee893044caf00075cb55b4cf666d1f1311c7979786212a501009f33bee945209"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/meshes/wrist1.stl",
+      "path": "asserts/robosuite_models/robots/ur5e/meshes/wrist1.stl",
+      "size": 59584,
+      "sha256": "f8c9f9337b6fd98c75f052e96de10e14a107ddb6874ba6b904e546f8a4e4f43a"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/meshes/wrist2.stl",
+      "path": "asserts/robosuite_models/robots/ur5e/meshes/wrist2.stl",
+      "size": 67584,
+      "sha256": "2964a63f60ce3e3cf3ad55bcf190d7876d50e373cb64b70a57cea5885eaf3c86"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/meshes/wrist3.stl",
+      "path": "asserts/robosuite_models/robots/ur5e/meshes/wrist3.stl",
+      "size": 7184,
+      "sha256": "83b3666b4ae2badd54af0d2c25a921682ecbc29e849eec646c3ed55fb74c78a3"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/base_vis/base_vis_0.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/base_vis/base_vis_0.obj",
+      "size": 555556,
+      "sha256": "192729de151e0982652acca1a97b64337a9ef22bd3ddf2420fa2b8e782afd3f9"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/base_vis/base_vis_1.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/base_vis/base_vis_1.obj",
+      "size": 638730,
+      "sha256": "436805384ad1f8f2ccaf028fed33596df4e156656fe4eeb73bfb1d32f51ccebd"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/forearm_vis/forearm_vis_0.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/forearm_vis/forearm_vis_0.obj",
+      "size": 1692114,
+      "sha256": "db3cc5aabd8b4ff3e2392f7aa989a1ac3829a8c692cc84a44fc6d161e0c9e25f"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/forearm_vis/forearm_vis_1.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/forearm_vis/forearm_vis_1.obj",
+      "size": 76433,
+      "sha256": "593487745160c53175b1329aa7a56275fd4ffad24c86e56966fbcaafe00cb74e"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/forearm_vis/forearm_vis_2.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/forearm_vis/forearm_vis_2.obj",
+      "size": 933173,
+      "sha256": "f68fd607a6166a0e2fcb162f472db24aa7008a369d878b700d5ca3f499e3f850"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/forearm_vis/forearm_vis_3.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/forearm_vis/forearm_vis_3.obj",
+      "size": 1096820,
+      "sha256": "b0fe9c0c9eb1b2612906effab179846c71b82c910ea73dfac3198ad1854189fd"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/shoulder_vis/shoulder_vis_0.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/shoulder_vis/shoulder_vis_0.obj",
+      "size": 2946979,
+      "sha256": "e6f46fbcdc3eb91856d29a54acbbb39242f422dcc62b6d5590685b057cf8be1a"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/shoulder_vis/shoulder_vis_1.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/shoulder_vis/shoulder_vis_1.obj",
+      "size": 569961,
+      "sha256": "922264d6abbaaa4d7cce453b3371dc7b9dfc8dd46961a64c835b431331e6643d"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/shoulder_vis/shoulder_vis_2.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/shoulder_vis/shoulder_vis_2.obj",
+      "size": 2441153,
+      "sha256": "c8b5432ca017f953da2ce264bfb8de2ac2b61eb5c85d472d06d4b9da3c3c9ab8"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/upperarm_vis/upperarm_vis_0.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/upperarm_vis/upperarm_vis_0.obj",
+      "size": 156260,
+      "sha256": "7e53e6302c7937d8c0853fdd600bcd4adf3767f586ed9a12170b4159f8f4a5b1"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/upperarm_vis/upperarm_vis_1.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/upperarm_vis/upperarm_vis_1.obj",
+      "size": 1090424,
+      "sha256": "0ce040b7f759bbeb6874005457a84239d02690c7eb22fc85d4876eb258ef4c70"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/upperarm_vis/upperarm_vis_2.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/upperarm_vis/upperarm_vis_2.obj",
+      "size": 3684774,
+      "sha256": "ebc641d2d76b981acd673fb6644895ce56a8c10e0109cbc4a8cc8c59e540e862"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/upperarm_vis/upperarm_vis_3.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/upperarm_vis/upperarm_vis_3.obj",
+      "size": 5345375,
+      "sha256": "0a965ee78d60112a72bcc33d173d6669f09a5854ab157c2c6df1b3f5857bbc3f"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/wrist1_vis/wrist1_vis_0.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/wrist1_vis/wrist1_vis_0.obj",
+      "size": 278772,
+      "sha256": "44d267ff1e725fc4a59ed6ab2f2eeb58356871d98d868d8ba08555bbd8b0af5d"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/wrist1_vis/wrist1_vis_1.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/wrist1_vis/wrist1_vis_1.obj",
+      "size": 2470993,
+      "sha256": "f04a25bc0827e903c9d001a16173e33197641280317b1d9e78e473f476052764"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/wrist1_vis/wrist1_vis_2.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/wrist1_vis/wrist1_vis_2.obj",
+      "size": 1658162,
+      "sha256": "23e82bbd4d6d21084d1a72d50f4d027d413ac0cb23edcb0b1c76f6c162da6a11"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/wrist2_vis/wrist2_vis_0.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/wrist2_vis/wrist2_vis_0.obj",
+      "size": 846654,
+      "sha256": "6482ce9227c3a4e0bc5af577c33008fda74723b7e8b72b5ffa6a2b5bf42651c3"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/wrist2_vis/wrist2_vis_1.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/wrist2_vis/wrist2_vis_1.obj",
+      "size": 2156472,
+      "sha256": "34c774dab175b810eb364b0955feaaa9648ad33bc4cd445f2d87c7a5f0d8faad"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/wrist2_vis/wrist2_vis_2.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/wrist2_vis/wrist2_vis_2.obj",
+      "size": 2141246,
+      "sha256": "a382e17343660e5757f03fd1f8d5dbd07cbcb5828b3c838815bdb1bf0c9d3004"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/obj_meshes/wrist3_vis/wrist3_vis.obj",
+      "path": "asserts/robosuite_models/robots/ur5e/obj_meshes/wrist3_vis/wrist3_vis.obj",
+      "size": 211663,
+      "sha256": "953c3ab8ff91983ba79cf139eec47853ded3e53943c366aaed84f60e62172e10"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/robots/ur5e/robot.xml",
+      "path": "asserts/robosuite_models/robots/ur5e/robot.xml",
+      "size": 9277,
+      "sha256": "f39d815f476aac03574b06dcbddb787efd6a92e0eabf5404e68221999f3fe364"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/textures/ceramic.png",
+      "path": "asserts/robosuite_models/textures/ceramic.png",
+      "size": 1442030,
+      "sha256": "beef464a2aa9143ba6a25a44adcbfd1f1aff16c5969edbf08019b61025388402"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/textures/dirt.png",
+      "path": "asserts/robosuite_models/textures/dirt.png",
+      "size": 533543,
+      "sha256": "b410966a8e0c1d52e2847bdb61aa51c6291efcd7e92839923637d0dcdb91e973"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/textures/light-gray-floor-tile.png",
+      "path": "asserts/robosuite_models/textures/light-gray-floor-tile.png",
+      "size": 73373,
+      "sha256": "a2aae4ba3b38c3ab9851eca9ad6e76cef9357ef75b3e9a4b280f694ca30acbc5"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/textures/light-gray-plaster.png",
+      "path": "asserts/robosuite_models/textures/light-gray-plaster.png",
+      "size": 516639,
+      "sha256": "d0bdaf13b44ab6ef3122451f6b3853e40bdf20bb9be7662649683ba525dfe191"
+    },
+    {
+      "source": "robosuite/robosuite/models/assets/textures/steel-brushed.png",
+      "path": "asserts/robosuite_models/textures/steel-brushed.png",
+      "size": 275192,
+      "sha256": "43f30e7a2d0e8085aa15f58623b1753a003f93e5fe336eeaf65c146f955a81d5"
+    },
+    {
+      "source": "DISCOVERSE/models/mjcf/manipulator/airbot_play/airbot_play.xml",
+      "path": "asserts/references/discoverse/airbot_play.xml",
+      "size": 5536,
+      "sha256": "69bb66f99b394e18050032ba1277f9c9a6ef634c760b4fb9652a91f036aa7634"
+    },
+    {
+      "source": "robosuite/LICENSE",
+      "path": "asserts/licenses/robosuite.LICENSE",
+      "size": 1474,
+      "sha256": "177978cbece0a4c454c2aaec5b3f145b39270814874c43109da9e829c39d9cba"
+    },
+    {
+      "source": "DISCOVERSE/LICENSE",
+      "path": "asserts/licenses/DISCOVERSE.LICENSE",
+      "size": 1066,
+      "sha256": "1ea6b7eb8deddd0e2b175d7e6b8f16a667b7065c4bce2e16d04014ac3aef0bff"
+    }
+  ]
+}

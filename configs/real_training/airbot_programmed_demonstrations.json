@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "protocol": "airbot_programmed_fixed_depth_v2",
+  "motion_policy": "fixed-depth",
+  "exploration_config": "configs/real_training/airbot_exploration.json",
+  "sponge_id": "normal",
+  "surface_id": "training_inclined_01",
+  "exploration_id": "normal_exp",
+  "initial_depth_m": {"nominal": 0.01, "under": 0.008, "over": 0.012},
+  "max_depth_m": 0.02,
+  "stationary_speed_limit_rad_s": 0.1,
+  "baseline_retry_timeout_s": 10.0,
+  "retraction_lateness_limit_s": 0.01,
+  "retraction_max_extension_s": 1.0,
+  "startup_approach": {
+    "mode": "direct",
+    "speed_m_s": 0.01,
+    "angular_speed_rad_s": 0.1,
+    "max_duration_s": 60,
+    "tracking_tolerance_m": 0.005,
+    "orientation_tolerance_rad": 0.02,
+    "direct_path_confirmed": true,
+    "confirmation_note": "On 2026-09-12 the operator explicitly approved direct movement to the exploration start. This is operator approval, not independent collision or hardware verification. Recheck the actual current-to-start path at every run."
+  },
+  "setup_confirmed": true,
+  "setup_note": "Fixed-depth motion with recorded F/T and inherited exploration force/torque guards; no target force or force feedback. On 2026-09-12 the operator explicitly confirmed onsite checks: non-contact exploration start, clear full +/-50 mm path, permitted 12 mm commanded press, emergency stop and support available. The 20 mm measured travel boundary remains active. This records operator confirmation, not independent hardware verification or calibration by the software."
+}

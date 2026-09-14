@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "airbot_physical_calibration",
+  "source_kind": "real",
+  "calibration_id": null,
+  "robot_id": "PZ60C02603000943",
+  "sensor_id": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AG0KL3D4-if00-port0",
+  "tcp_definition": null,
+  "sensor_frame": "KWR75 sensor native axes",
+  "method_notes": null,
+  "position_frame": "base_link",
+  "position_units": "m",
+  "orientation_order": "xyzw",
+  "ft_frame": "ft_frame local",
+  "ft_reference_point": "ft_frame origin",
+  "compensation": "sensor_bias_only_gravity_retained",
+  "channels": [
+    "Fx",
+    "Fy",
+    "Fz",
+    "Tx",
+    "Ty",
+    "Tz"
+  ],
+  "ft_units": [
+    "N",
+    "N",
+    "N",
+    "N*m",
+    "N*m",
+    "N*m"
+  ],
+  "base_from_sdk": null,
+  "end_from_tcp": null,
+  "sensor_to_ft_frame": null,
+  "sensor_bias_si": null,
+  "verification": {
+    "units_and_axes_verified": false,
+    "electronic_bias_verified": false,
+    "tcp_geometry_verified": false,
+    "applies_to_recorded_setup": false
+  },
+  "evidence": []
+}
