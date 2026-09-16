@@ -106,6 +106,58 @@ class _CsvRecorder:
             self._file.close()
 
 
+class _BackgroundCsvRecorder(_CsvRecorder):
+    """Single disk-writing owner; producer and control calls never write files."""
+
+    def __init__(self, path, bias):
+        super().__init__(path, bias)
+        self._stop_writer = threading.Event()
+        self._ready = threading.Event()
+        self._worker = threading.Thread(target=self._run_writer, name="kwr75-csv", daemon=True)
+        try:
+            self._worker.start()
+        except BaseException:
+            self._file.close()
+            raise
+
+    def enqueue(self, *args):
+        super().enqueue(*args)
+        self._ready.set()
+
+    def drain(self):
+        if self.error is not None:
+            raise self.error
+        if not self._worker.is_alive():
+            raise RuntimeError("CSV writer stopped; recording incomplete")
+
+    def _run_writer(self):
+        try:
+            while not self._stop_writer.is_set():
+                self._ready.wait(0.01)
+                self._ready.clear()
+                _CsvRecorder.drain(self)
+            _CsvRecorder.drain(self)
+        except BaseException as exc:
+            if self.error is None:
+                self.error = exc
+        finally:
+            try:
+                self._file.close()
+            except BaseException as exc:
+                if self.error is None:
+                    self.error = exc
+
+    def close(self):
+        # The reader detaches the producer before asking the writer to finish.
+        self._stop_writer.set()
+        self._ready.set()
+        self._worker.join(timeout=2.0)
+        if self._worker.is_alive():
+            raise RuntimeError("CSV writer shutdown timed out; recording incomplete")
+        if self.error is not None:
+            raise self.error
+
+
 class Kwr75Reader:
     """Background-thread reader keeping the latest KWR75 frame.
 
@@ -163,25 +215,34 @@ class Kwr75Reader:
         else:
             self._close_csv()
 
-    def start_csv(self, path):
+    def start_csv(self, path, *, bias=None, background=False):
         """Record subsequent parsed frames, freezing the current tare bias."""
         with self._lock:
             if self._csv is not None:
                 raise RuntimeError("CSV recording already started")
-            self._csv = _CsvRecorder(path, self._bias)
+            selected = self._bias if bias is None else np.asarray(bias, dtype=float)
+            if selected.shape != (6,) or not np.isfinite(selected).all():
+                raise ValueError("CSV bias must contain six finite values")
+            recorder_type = _BackgroundCsvRecorder if background else _CsvRecorder
+            self._csv = recorder_type(path, selected)
             return self._csv
 
+    def stop_csv(self):
+        """Detach the recorder before closing; the serial reader remains active."""
+        with self._lock:
+            recorder, self._csv = self._csv, None
+        if recorder is not None:
+            recorder.close()
+
     def flush_csv(self):
-        """Call regularly from the polling thread, not the serial reader thread."""
+        """Drain synchronous CSV; background mode only checks recording health."""
         if self._csv is not None:
             self._csv.drain()
             if self._read_error is not None:
                 raise RuntimeError(f"Sensor read failed: {self._read_error}") from self._read_error
 
     def _close_csv(self):
-        recorder, self._csv = self._csv, None
-        if recorder is not None:
-            recorder.close()
+        self.stop_csv()
 
     def __enter__(self):
         return self.start()
@@ -384,6 +445,9 @@ def main():
     args = ap.parse_args()
     if not math.isfinite(args.secs) or args.secs <= 0:
         ap.error("--secs must be finite and greater than zero")
+    from scripts.shared.run_paths import new_output
+
+    args.csv = new_output(args.csv)
     if args.csv is not None and args.csv.exists():
         ap.error(f"CSV file already exists (will not overwrite): {args.csv}")
     save_plot = args.csv is not None and not args.no_save_plot

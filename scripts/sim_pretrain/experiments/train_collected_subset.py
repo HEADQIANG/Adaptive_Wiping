@@ -9,6 +9,7 @@ import numpy as np
 
 from scripts.shared.common import digest, file_digest, load_config, provenance, write_json
 from scripts.shared.paths import read_path, writable_path
+from scripts.shared.run_layout import sim_data_path
 from scripts.sim_pretrain.collection import FIELDS
 from scripts.sim_pretrain.experiments.collect_wide_training import validate_numerical
 
@@ -39,6 +40,7 @@ def prepare(cfg, source, out):
                  conversion_provenance=provenance(),
                  policy="first_complete_rows_then_seeded_disjoint_split_no_motion_filter")
     count = sum(cfg["dataset"].values())
+    path = sim_data_path(out, "dataset.h5")
     with h5py.File(source / "dataset.h5", "r") as original:
         if (original.attrs["config_hash"] != digest(manifest["config"])
                 or json.loads(original.attrs["provenance_json"]) != manifest):
@@ -50,7 +52,7 @@ def prepare(cfg, source, out):
         selected = rows[:count]
         shuffled = np.random.default_rng(cfg["collection"]["split_seed"]).permutation(count)
         mappings, diagnostic_rows = {}, []
-        temporary = out / "dataset.building.h5"
+        temporary = path.with_name("dataset.building.h5")
         with h5py.File(temporary, "x") as target:
             for key,value in original.attrs.items():
                 target.attrs[key] = value
@@ -86,9 +88,9 @@ def prepare(cfg, source, out):
     if file_digest(source / "dataset.h5") != source_hash:
         raise ValueError("Source changed during conversion")
     write_json(out / "manifest.json",proof)
-    write_json(out / "source_mapping.json",mappings)
-    write_json(out / "dataset_integrity.json",dict(sha256=file_digest(path)))
-    write_json(out / "collection.json",dict(complete=True,total=count,valid_counts=cfg["dataset"],
+    write_json(sim_data_path(out, "source_mapping.json"),mappings)
+    write_json(sim_data_path(out, "dataset_integrity.json"),dict(sha256=file_digest(path)))
+    write_json(sim_data_path(out, "collection.json"),dict(complete=True,total=count,valid_counts=cfg["dataset"],
                source_valid_rows=len(rows),motion_gate_disabled=True,
                motion_passed=sum(r["motion"]["passed"] for r in diagnostic_rows),
                any_saturation=sum(r["metrics"]["saturation_fraction"]>0 for r in diagnostic_rows)))
@@ -97,7 +99,12 @@ def prepare(cfg, source, out):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config",default="configs/sim_pretrain/pretrain_wide_1200.yaml")
-    cfg = load_config(parser.parse_args(argv).config)
+    parser.add_argument("--resume", action="store_true", help="Continue the exact config output_dir, including legacy runs")
+    args = parser.parse_args(argv)
+    cfg = load_config(args.config)
+    from scripts.shared.run_paths import new_run_config
+
+    cfg = new_run_config(cfg, resume=args.resume)
     source = read_path(cfg["collection"]["source"])
     out = writable_path(cfg["output_dir"])
     if out == source or out.is_relative_to(source) or source.is_relative_to(out):

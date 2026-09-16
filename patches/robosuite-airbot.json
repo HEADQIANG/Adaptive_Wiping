@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "base_commit": "5ce6643f3092639d08f7b0f90ed1c6a84f50552c",
+  "patch_sha256": "8eb60d011227bfd7e1838de851d49fb52a48ee68d0596952337899f2b029382d",
+  "files": [
+    {
+      "path": "docs/airbot_play.md",
+      "sha256": "279360d2fde516371eeccfc9d3425bc3e831d1b62463fca0c027c446bf8be9b5"
+    },
+    {
+      "path": "docs/index.rst",
+      "sha256": "35ef5c839cd518a16207715585c1ef30d9111bd23e7526d547621d55b8063f77"
+    },
+    {
+      "path": "docs/requirements.txt",
+      "sha256": "edf223dfdea32f0301b44b8601dcabfa5d1e5ecfd3405efaab7db527dabc8752"
+    },
+    {
+      "path": "docs_codex/airbot_play_adapt.md",
+      "sha256": "b8923b1e674119449275c35ac9395bb534a75e02cb37d1eaac833c36037e9b3e"
+    },
+    {
+      "path": "robosuite/controllers/config/robots/default_airbot_play.json",
+      "sha256": "6c7d5ffc87fdba3945e8752e6e4d90f1fd8b2f76843e7119f6f665b2bfcbd5cf"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/arm_base_0.obj",
+      "sha256": "a8f4b3bd86b7b42f484f80b0d8abaf05bc32c3e769874539cd66db045291f2bc"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/arm_base_1.obj",
+      "sha256": "ef0ef26d2cf82e2fa82f8147ef47d37bdc76957e0c0c227a63d15cf38bb18d8d"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/camera_stand.obj",
+      "sha256": "176ac7b8b738eef11e4889876ab5b261c7a984a744d29149aeaea17895da1026"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/left.obj",
+      "sha256": "ce1568a90e985b0c84964329998ce5155848d084ce203c5bb51d3bfa9cc3acd6"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/link1.obj",
+      "sha256": "d448e9742660b9f96f3d9510f23f94c8079aa52a0697aa21756094fc18688c2a"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/link2_0.obj",
+      "sha256": "fd147d883a2af6484ca8c4060eaf2d2a03d70e89598f367d143e15298b3a0717"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/link2_1.obj",
+      "sha256": "b148bceb4e4277a7ce753ef904103df43302789f9b64d386fd24ded0232871b8"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/link3_0.obj",
+      "sha256": "125db0b6739af668565a20dcfff16f9aa8202388b83e419d75520a7cf1d58edd"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/link3_1.obj",
+      "sha256": "962261b0c1713e575cbcf3dfb4833b589bb0c35f2ffd395398e8e297d9126c1b"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/link4.obj",
+      "sha256": "890ae19b7f80cd60ed44611e8be4da97f631acb44f5b9fee18668890c2c2603f"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/link5_0.obj",
+      "sha256": "d1415fee7d55699d3c7650633e1e5f8d97d8d44396b26e1b9758706df207b85b"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/link5_1.obj",
+      "sha256": "364754f401e71b72ede3148e49385a7571c5ad07d230ab9c6295d1a85c2dd010"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/link6.obj",
+      "sha256": "82b583ceb042427ed87afa714177a7377c17487689f9af5a03fd386f724b83d4"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/meshes/right.obj",
+      "sha256": "91ac8322536db80bfd2db398e30d23dd1f15360f6b8158ad02fb62fb8cfcc709"
+    },
+    {
+      "path": "robosuite/models/assets/robots/airbot_play/robot.xml",
+      "sha256": "60d2d8e938f71d8f6cea71d2074be669e316e75488b874e7c7ab4ad90bfde41f"
+    },
+    {
+      "path": "robosuite/models/robots/manipulators/__init__.py",
+      "sha256": "a09b0d7a2ff55e03eefbc0d4b458ab3c4e5b71eed1fc13ab68df1e0cef1b49f8"
+    },
+    {
+      "path": "robosuite/models/robots/manipulators/airbot_play_robot.py",
+      "sha256": "ee63226ef6e54c6397055af032a21846a19431a68be73a5fcfcfb804ed3f4c23"
+    },
+    {
+      "path": "robosuite/robots/__init__.py",
+      "sha256": "d0620648edb82896b1d588f7f2faf4c48742bf9a4629e2556821756e68b19ec4"
+    }
+  ]
+}

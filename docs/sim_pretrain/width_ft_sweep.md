@@ -9,7 +9,7 @@ width. The stiffness parameter is not calibrated N/m.
 
 The new entry point reuses the unchanged friction-sweep collector once per width,
 with a fresh environment, seed42 and the same400-frame exploration. No training
-runs/sim_pretrain/model, production control, previous script or previous results are modified.
+runs/sim_training/model, production control, previous script or previous results are modified.
 Contact-motion failures are recorded and retained, not used to reject data.
 
 ## Run
@@ -22,7 +22,7 @@ MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.width_ft_sweep \
   --dataset-config archive/sim_pretrain/two_control_pretraining_v2/normal/config.json \
   --mu 0.9 --stiffness 1000 --width 0.02 0.05 0.1 0.2 0.3 \
-  --output runs/sim_pretrain/normal_width_ft_v1
+  --output runs/sim_data/normal_width_ft_v1
 ```
 
 Output must be new and outside the frozen dataset directory. There is no resume,
@@ -57,15 +57,15 @@ its torques must not be compared with local sensor torques without transforms.
 ## View And Read
 
 ```bash
-xdg-open runs/sim_pretrain/normal_width_ft_v1/ft_filtered_comparison.png
-xdg-open runs/sim_pretrain/normal_width_ft_v1/ft_raw_comparison.png
-xdg-open runs/sim_pretrain/normal_width_ft_v1/motion_contact.png
+xdg-open runs/sim_data/normal_width_ft_v1/ft_filtered_comparison.png
+xdg-open runs/sim_data/normal_width_ft_v1/ft_raw_comparison.png
+xdg-open runs/sim_data/normal_width_ft_v1/motion_contact.png
 ```
 
 ```python
 import numpy as np
 
-with np.load("runs/sim_pretrain/normal_width_ft_v1/sweep.npz", allow_pickle=False) as data:
+with np.load("runs/sim_data/normal_width_ft_v1/sweep.npz", allow_pickle=False) as data:
     print(data["parameters"])
     time = data["time"][2]  # width=0.1
     ft = data["ft"][2]      # [400,6], raw physical units

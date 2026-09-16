@@ -5,13 +5,12 @@ import itertools
 import json
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
-from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 
 from scripts.shared.common import file_digest, load_config, provenance, write_json
-from scripts.shared.paths import ROOT, writable_path
+from scripts.shared.paths import ROOT
 
 WINDOWS = ((1.8, 2.0), (2.6, 3.0), (3.7, 4.0))
 TIMES = np.arange(1, 401) / 100
@@ -218,7 +217,7 @@ def plot_best(output, report, real_time, real_ft):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=str(ROOT / "configs/sim_pretrain/pretrain_paper.yaml"))
-    parser.add_argument("--reference", default=str(ROOT / "runs/real_training/real_robot/exploration_tared_plot_003.jsonl"))
+    parser.add_argument("--reference", default=str(ROOT / "runs/real_exploration/exploration_tared_plot_003.jsonl"))
     parser.add_argument("--gains", nargs="+", type=float, default=[300, 1000])
     parser.add_argument("--mu", nargs="+", type=float, default=[0.5, 0.8, 1.2])
     parser.add_argument("--stiffness", nargs="+", type=float, default=[100.25, 500.25, 1000])
@@ -248,7 +247,9 @@ def main(argv=None):
         grid = list(itertools.product(args.gains, args.mu, args.stiffness, args.width))
     cfg = load_config(args.config)
     rt, rf, aligned = real_trace(args.reference)
-    output = writable_path(args.output or ("runs/sim_pretrain/match_real_003_" + datetime.now().strftime("%Y%m%d_%H%M%S_%f")))
+    from scripts.shared.run_paths import new_output
+
+    output = new_output(args.output or "runs/sim_data/match_real_003")
     output.mkdir(parents=True, exist_ok=False)
     report = dict(
         state="running", purpose="diagnostic_only_not_training_or_material_calibration",

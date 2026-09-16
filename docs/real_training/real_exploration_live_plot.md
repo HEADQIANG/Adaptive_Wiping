@@ -1,6 +1,6 @@
 # 探索时实时显示清零后的力/力矩
 
-在原探索命令后增加 `--plot`，打开六轴实时窗口。仅适用于 `force-guarded`；
+在探索命令后增加 `--plot`，打开六轴实时窗口。适用于默认 `manual-start` 和显式 `force-guarded`；
 `air` 和 `contact-no-ft` 没有力传感器数据，不能开启此功能。
 不加 `--plot` 时维持原有无窗口行为。
 
@@ -21,21 +21,23 @@
 /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore preview --plot
 ```
 
-完成现场安全检查、确认起点静止且海绵距桌面 1 mm 后，在有人监护的终端执行：
+完成现场安全检查，在有人监护的终端执行默认手动起点流程：
 
 ```bash
 env MPLBACKEND=TkAgg \
   PYTHONPATH='/media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping' \
   /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run \
-  --config configs/real_training/airbot_exploration.json \
+  --config configs/real_training/airbot_exploration_manual.json \
   --execute --time-scale 1 --plot --plot-window 10 --plot-hz 10 \
-  --output runs/real_training/real_robot/exploration_tared_plot_001.jsonl
+  --output runs/real_exploration/exploration_tared_plot_001.jsonl
 ```
 
-每次选择尚不存在的输出文件名，不覆盖旧数据。输入 `EXPLORE` 后，先验证绘图
+每次选择尚不存在的输出文件名，不覆盖旧数据。带 `--execute` 启动后不再等待口令，先验证绘图
 进程能打开窗口，再连接硬件；缺少依赖或无法打开窗口会在硬件连接前退出。
-起点检查和约 1 秒软件清零通过后才执行原有探索。按压仍为 `0.005 m/s × 2 s`，
-总探索 `4 s / 400` 帧，另用 `2 s` 回撤。原安全门禁与日志保存方式不变。
+连接后拖拽至人工确认的 1 mm 非接触间隙，按 `h` 固定，看到提示后按 `s` 清零并探索。
+新模式无起点匹配、静止或载荷阈值验收；按压仍为 `0.005 m/s × 2 s`，探索 `4 s / 400` 帧，
+另用 `2 s` 回撤，返回偏差仅记录。保持到 `IDLE` 人工退出。详见 [完整操作](manual_start_exploration.md)。
+旧流程需同时指定 `--mode force-guarded --config configs/real_training/airbot_exploration.json`，原保护不变。
 
 ## 窗口与数据
 

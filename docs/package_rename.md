@@ -63,10 +63,10 @@ python -m scripts.shared.assets verify --sources
 - 全部 3,446 个归档与快照文件、1,965,333,140 字节大小及 SHA-256 一致；55 个模型资源的来源校验通过。
 - 当前文档本地链接无失效项，当前代码及运行文档没有旧包导入或旧入口命令；历史路径测试保留旧名称。
 
-记录：[完整回归](../runs/sim_pretrain/scripts_package_smoke_001/regression.log)、
-[仿真闭环](../runs/sim_pretrain/scripts_package_smoke_001/smoke_report.json)、
-[SDK 测试](../runs/robot_control/scripts_package_verification_001/sdk_tests.log)、
-[历史模型评估](../runs/sim_pretrain/scripts_package_evaluation_001/evaluation.json)、
+记录：[完整回归](../runs/sim_training/scripts_package_smoke_001/regression.log)、
+[仿真闭环](../runs/sim_training/scripts_package_smoke_001/smoke_report.json)、
+[SDK 测试](../runs/real_deploy/robot_control/scripts_package_verification_001/sdk_tests.log)、
+[历史模型评估](../runs/sim_training/scripts_package_evaluation_001/evaluation.json)、
 [历史策略回放](../runs/real_deploy/scripts_package_replay_001/report.json)。
 
 本次没有连接或驱动真机。仿真 smoke 使用研究 record-only 接触策略，仅验证软件流程。

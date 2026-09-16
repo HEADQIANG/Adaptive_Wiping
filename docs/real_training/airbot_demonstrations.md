@@ -4,6 +4,9 @@
 
 入口 `scripts.real_training.airbot_demonstrations`，配置 `configs/real_training/airbot_demonstrations.json`。
 仅人工拖拽，不发送位置目标、不自动回位、不回零。尚未进行真机验收。
+2026-09-15：默认改为软件清零数据与实时六轴曲线。每次连接先在无接触状态输入 `z` 回车清零，
+再输入 `s` 回车录制；清零只扣当前姿态的空载基线，不是跨姿态重力补偿。
+新配置不能续采旧原始力会话，必须新建目录；详细步骤见 [清零与实时曲线](manual_tare_live_plot.md)。
 未指定 `--mode` 时行为保持不变；新增的 `--mode programmed` 为独立协议，
 配置、数据目录和操作步骤见 [程序示教采集](airbot_programmed_demonstrations.md)，不能混用旧人工会话。
 
@@ -17,7 +20,9 @@
 本入口以目标 100 Hz 记录实测 SDK 位姿、关节状态、传感器最近读数和各自主机时间戳，
 同时保留传感器全速 CSV。这是为既有离线处理保留高频日志的工程选择，不是论文示教原始采样率。
 10 秒有效片段后另保留至少 20 ms 尾部观测，保证最近 FT 接收时间覆盖片段终点，不增加训练帧数。
-不进行接触去皮，不做重力补偿或 FT 坐标变换。零偏默认 0 只表示保留原始负载，不能宣称已完成电子零偏标定。
+不进行接触去皮，不做跨姿态重力补偿或 FT 坐标变换。清零后的 `tared_sensor_wrench_si`
+为原始读数减去本次 `z` 记录的 1 秒无接触均值；原始值和配置电子零偏修正值仍保留。
+电子零偏默认 0，不代表已独立标定；清零不重复扣除该配置零偏。
 重力补偿拖动控制器与力数据中的重力补偿是两件不同的事。
 
 ## 现场准备和配置
@@ -33,8 +38,10 @@
 位置与六维力仍完整记录，传感器有效性/20 ms 断流、关节范围、控制权及电机状态检查保持不变。
 关节速度另设 `joint_speed_policy="record-only"`，当前默认取消运动速度中止，
 `joint_speed_limit_rad_s=null`；实测速度仍原样写入 `pose.joint_velocity_rad_s`，不裁剪。
-仅此人工示教入口变化，自动探索和 SDK/固件保护不变。录制前仍须静止，静止检查不通过只拒绝开始该段。
-`setup_confirmed=false` 不会阻止此模式的 preview/run；每次 run 仍须输入 `DRAG` 确认现场准备，
+仅此人工示教入口变化，自动探索和 SDK/固件保护不变。2026-09-15 起取消录制前静止检查：
+输入 `s` 后只读取一次当前状态作为起点，不再进行 11 帧静止采样或检查采样期间位姿变化。
+默认 record-only 配置允许运动中开始录制；若另设速度 stop 策略，其运动速度限制仍生效。
+`setup_confirmed=false` 不会阻止此模式的 preview/run；每次 run 以 `--execute` 明确确认现场准备，不再输入启动口令，
 这不是程序代为确认现场安全或标定。**超过力值或移出工作区不会自动中止，操作者须全程监护。**
 
 如需恢复力/力矩阈值中止，设置 `workspace_force_policy="stop"`，并填写以下字段。
@@ -55,13 +62,15 @@
 
 ```bash
 cd /media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping
-env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m pip install -r requirements/robot_control.txt
+env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m pip install -r requirements/manual_demonstrations.txt
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training demonstrate preview --config configs/real_training/airbot_demonstrations.json
 ```
 
 `preview` 纯离线，当前默认 record-only 配置应退出 0，显示 `setup_error: null`。
 如切回 stop 模式而未填写现场配置，则退出码 2 并列出原因。
 不需要训练环境、PyTorch、ROS 或 MuJoCo。
+默认图窗要求桌面 Tk/Qt 后端，缺失时在连接硬件前失败；离线 `preview/status` 不打开图窗。
+无桌面时仅可显式 `--no-plot` 关闭显示，清零和数据记录不受影响。
 
 终端 A：仅在没有已有服务且现场安全确认完成时启动。已有正常服务不要重复启动。
 
@@ -77,36 +86,28 @@ env MALLOC_ARENA_MAX=2 AIRBOT_LOG_DIR=/home/wp/airbot-logs-5.2 \
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.airbot_initial_pose inspect
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training demonstrate run \
   --config configs/real_training/airbot_demonstrations.json \
-  --output runs/real_training/manual_demonstrations/session_001 --execute
+  --output runs/real_demonstrations/manual/session_001 --execute
 ```
 
-1. 托稳机械臂，输入大写 `DRAG`。仅看到 `Gravity compensation active` 后才拖动。
-2. 手动拖到任务起点，静止，输入 `s`。程序检查 11 帧静止状态，之后显示 `RECORDING`，开始自然擦拭 10 秒。
+1. 执行带 `--execute` 的命令前托稳机械臂；不再等待启动口令。仅看到 `Gravity compensation active` 后才拖动。
+2. 首次先将工具移到无接触姿态，保持朝向稳定，输入 `z` 回车确认无接触并清零 1 秒。
+   看到 `Tare complete` 后手动选择任务起点，输入 `s` 回车，无需先静止。
+   显示 `RECORDING` 后记录自然擦拭 10 秒，并在图窗显示清零后的六轴曲线。
 3. 看到 `STOP wiping` 停止擦拭，继续托稳。时序检查通过且现场确认整段无误时，输入 `a` 接受；其他输入拒绝重采。不要预先输入命令。
-4. 每段之间手动选定起点和朝向，停稳后输入 `s`。第一次记录起点仍为本会话参考。
+4. 每段之间手动选定起点和朝向，输入 `s`。第一次记录起点仍为本会话参考。
    起点位置现改为仅记录：显示偏差 mm，不再因为超过 2 mm 拒绝录制，也不会平移/裁剪实际轨迹。
    起点朝向也仅记录偏差 rad，不再因为与参考朝向相差超过 0.02 rad 拒绝录制。
-   录制前静止检查（含采样期间姿态变化）及四元数有效性检查仍保留；允许不同朝向不等于允许边移动边开始录制。
+   录制前静止检查已取消；四元数有效性、关节范围、传感器时效和控制状态检查仍保留。
 5. 接受第 8 段后自动请求 idle，全程保持支撑。提前退出输入 `q`；采集中紧急中止用 Ctrl+C 并执行现场安全流程。
 6. 必须看到 `Idle confirmed`。看到 `idle NOT confirmed` 时状态未知，不能放手或反复重启。
+7. 退出并清理硬件连接后自动保存已接受数据的 XYZ 轨迹和六轴力/力矩图到会话 `plots/`。
+   满 8 条绘制完整组，提前退出仅绘制已接受条目；重复导出使用新编号目录，不覆盖已有图片。
+   运行命令不变，`--no-plot` 不关闭退出导出。详见 [图像文件与离线补画](manual_tare_live_plot.md)。
 
-同一命令可续采，读取已接受条目继续计数，原始文件不覆盖；配置必须完全一致。
-本次仅改起点位置和朝向记录行为，没有修改配置，已采集 1 条的会话可在原目录续采。
-先托稳机械臂，在旧进程输入 `q` 并确认 `Idle confirmed`，再运行：
-
-```bash
-env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training demonstrate run \
-  --output runs/real_training/raw_data/manual_demonstrations/session_record_only_002 --execute
-```
-
-已有 `demo_01.json`、原始日志及 `reference.json` 均不改写。起点变化可能增加绝对 XY 轨迹差异，
-最终仍需检查示教任务是否一致，不应把通过采集检查等同于训练质量合格。
-从之前的速度中止配置切换到新配置时，请使用新目录，旧日志不修改、不混合：
-
-```bash
-env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training demonstrate run \
-  --output runs/real_training/raw_data/manual_demonstrations/session_record_only_002 --execute
-```
+清零会话可以续采，必须在 `--output` 中使用首次输出的实际路径（包括时间戳目录），配置必须完全一致。
+每次重新连接都要重新输入 `z`，不自动复用上次连接的基线；同一连接期间可在下一条开始前重新 `z`。
+清零不在录制中执行。旧原始力会话不能用当前默认配置续采；原始文件和旧参考不改写。
+关闭图窗只停止显示，不退出采集；安全退出仍使用终端 `q` 或 Ctrl+C。
 
 不需要重启正常运行的 `airbot-arm` 服务，但旧采集进程必须先托稳退出，再执行新命令。
 变更工具/海绵/斜面/限值需用新会话目录，不混合成同一组 8 条。未接受的尝试不会自动算入条数。
@@ -116,7 +117,7 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training d
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training demonstrate status \
-  --output runs/real_training/manual_demonstrations/session_001
+  --output runs/real_demonstrations/manual/session_001
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m unittest discover -s tests -t . -p 'test_airbot_demonstrations.py' -v
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m unittest discover -s tests -t . -p 'test_airbot_initial_pose.py' -v
 ```
@@ -131,7 +132,9 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m unittest discover -s te
 四元数正负号等价不会产生虚假的朝向差。终端同步显示偏差，原始位姿不旋转、不校正。
 不同工具朝向会改变传感器轴向及重力分量，应在后续数据审核和标定转换时考虑，不代表示教质量自动合格。
 旧记录没有这些字段，不会被追溯改写或假定为新策略采集。
-`sensor_*.csv` 保留每次连接期间全速传感器读数（包含等待和回位，不等于单段 10 秒数据）。
+`tare_*.json` 保存每次基线及其观测样本；`sensor_<tare_id>.csv` 保留清零成功后直到重新清零或退出期间的全速读数，
+`raw_*` 列是原始值，`net_*` 列是减去该次基线后的值（包含等待和手动调整，不等于单段 10 秒数据）。
+每条 JSONL 的 `start.tare`、`.start.json` 和接受记录均带基线，样本 FT 带 `tare_id` 与 `tared_sensor_wrench_si`。
 中断日志即使存在也不能手动补写结束标记作为成功数据。
 
 质量检查要求完整 10 秒、位姿与 FT 接收间隔不超过 20 ms、位姿中位采样周期在 10 ms 的 ±10% 内、
@@ -143,12 +146,15 @@ SDK RPC 设置 deadline，但不是实时系统或独立急停，串行多次状
 时序不过关应先检查通信/负载并重采，不填充、复制帧或放宽训练门槛。
 
 **采满 8 条原始日志不等于训练输入已就绪。** 当前 `training_ready=false` 是刻意保留的状态：
-SDK 末端并非已标定海绵 TCP；FT 位于传感器原点和原轴；机器人与传感器为主机接收时间，
+位置使用 SDK 末端坐标，不要求 TCP 标定；FT 位于传感器原点和原轴；机器人与传感器为主机接收时间，
 没有硬件同步时间戳。CSV 同一串口批次的多帧共享接收时间，不能假设各帧具有独立硬件时间。
 采集 JSONL 分别保留 pose `host_monotonic_s` 和 FT `sensor_receive_perf_s`，不能未核实时钟实现就混用。
 
-进入 [真实离线训练](real_training.md) 前还需：实测 SDK 末端到海绵 TCP 的刚体变换、
-传感器到 `ft_frame` 的变换（力矩含力臂项）、电子零偏和时钟约定；补齐同一 Normal 海绵的
+新清零人工会话仍会被旧原始载荷导入器明确拒绝，避免忽略已记录的清零值；现在可使用
+[清零人工示教导入与训练](manual_tared_training.md) 的显式参数，配对条件已确认一致的完整 manual-start 探索。
+原会话的 `training_ready=false` 保持不变，训练就绪以新派生数据的 inspect/prepare 验收为准。
+历史原始力会话进入 [真实离线训练](real_training.md) 前仍需按所选 profile 核对力输入处理和时钟约定。
+仅传感器标定流程要求到 `ft_frame` 的变换（含力臂项）和电子零偏；还需同一 Normal 海绵的
 4 秒真实探索，完成经过审计的导入，再由 `real_training inspect` 检验 `raw.h5`。
 本入口不伪造标定矩阵、不生成合成数据代替真实探索，也不直接输出 `raw.h5`。
 已有 `configs/real_training/real_training_paper.yaml` 的训练命令保持不变；不要对这些 JSONL 直接运行 prepare。
@@ -156,5 +162,4 @@ SDK 末端并非已标定海绵 TCP；FT 位于传感器原点和原轴；机器
 软件验证（2026-09-10）：SDK 5.2.2 环境下 `test_airbot*.py` 共 89 项测试通过，
 包含 10 项新增示教测试；默认 preview 正确拒绝未确认的现场配置。未连接硬件或采集真实示教。
 以上为初版 stop 配置验证；record-only 更新后的测试和默认 preview 按本节新说明执行。
-另有 24 项 KWR75 读取器测试在 `clean` 环境通过。SDK 环境缺少 matplotlib，运行读取器的
-旧绘图 CLI 测试会有 15 项依赖失败；本采集入口直接使用读取器 API，不调用绘图 CLI，不需要安装 matplotlib。
+旧无绘图版本不要求 matplotlib；当前默认实时曲线需要 `requirements/manual_demonstrations.txt` 中的绘图依赖。

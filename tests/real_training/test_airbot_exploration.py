@@ -391,15 +391,15 @@ class ExplorationTests(unittest.TestCase):
             self.assertNotIn("max_force_n", loaded)
             self.assertNotIn("eef_current_limit", loaded)
 
-    def test_contact_cli_uses_distinct_confirmation_and_no_sensor_import(self):
+    def test_contact_cli_uses_execute_without_prompt_or_sensor_import(self):
         self.configure_no_ft()
-        self.check_cli_without_sensor("contact-no-ft", "CONTACT-NO-FT")
+        self.check_cli_without_sensor("contact-no-ft")
 
-    def test_air_cli_uses_distinct_confirmation_and_no_sensor_import(self):
+    def test_air_cli_uses_execute_without_prompt_or_sensor_import(self):
         self.configure_air()
-        self.check_cli_without_sensor("air", "AIR-MOTION")
+        self.check_cli_without_sensor("air")
 
-    def check_cli_without_sensor(self, mode, token):
+    def check_cli_without_sensor(self, mode):
         from unittest.mock import Mock
 
         real_execute = exp.execute
@@ -422,12 +422,10 @@ class ExplorationTests(unittest.TestCase):
         ):
             path = Path(folder) / "motion.jsonl"
             argv = ["run", "--mode", mode, "--execute", "--output", str(path)]
-            with patch("builtins.input", return_value="EXPLORE"):
+            with patch("builtins.input", side_effect=AssertionError("Unexpected startup prompt")) as prompt:
                 self.assertEqual(exp.main(argv), 0)
-            connect.assert_not_called()
-            self.assertFalse(path.exists())
-            with patch("builtins.input", return_value=token):
-                self.assertEqual(exp.main(argv), 0)
+            prompt.assert_not_called()
+            connect.assert_called_once()
             events = [json.loads(line) for line in path.read_text().splitlines()]
             self.assertFalse(events[0]["force_monitoring"])
             self.assertEqual(events[0]["contact_expected"], mode != "air")
@@ -1121,7 +1119,7 @@ class ExplorationTests(unittest.TestCase):
                     exp.main(argv)
             connect.assert_not_called()
 
-    def test_cancel_and_existing_log_do_not_connect(self):
+    def test_existing_log_does_not_connect(self):
         with tempfile.TemporaryDirectory() as folder:
             target = Path(folder) / "log.jsonl"
             argv = ["run", "--execute", "--output", str(target)]
@@ -1130,17 +1128,6 @@ class ExplorationTests(unittest.TestCase):
                 patch.object(exp.sys.stdin, "isatty", return_value=True),
                 patch.object(exp, "load_setup", return_value=(self.cfg, self.record)),
             ):
-                # Stub only the sensor module import; no serial instance is created.
-                fake_sensor_module = SimpleNamespace(Kwr75Reader=Sensor)
-                with (
-                    patch.dict(
-                        "sys.modules",
-                        {"scripts.force_sensor.kwr75_reader": fake_sensor_module},
-                    ),
-                    patch("builtins.input", return_value="no"),
-                ):
-                    self.assertEqual(exp.main(argv), 0)
-                self.assertFalse(target.exists())
                 target.write_text("keep")
                 with self.assertRaises(SystemExit):
                     exp.main(argv)
@@ -1170,12 +1157,12 @@ class ExplorationTests(unittest.TestCase):
     def test_plot_startup_failure_precedes_hardware_connection(self):
         with tempfile.TemporaryDirectory() as folder:
             target = Path(folder) / "log.jsonl"
-            argv = ["run", "--execute", "--plot", "--output", str(target)]
+            argv = ["run", "--mode", "force-guarded", "--execute", "--plot", "--output", str(target)]
             with (
                 patch.object(exp, "open_client") as connect,
                 patch.object(exp.sys.stdin, "isatty", return_value=True),
                 patch.object(exp, "load_setup", return_value=(self.cfg, self.record)),
-                patch("builtins.input", return_value="EXPLORE"),
+                patch("builtins.input", side_effect=AssertionError("Unexpected startup prompt")) as prompt,
                 patch.dict("sys.modules", {
                     "scripts.force_sensor.kwr75_reader": SimpleNamespace(Kwr75Reader=Sensor),
                 }),
@@ -1183,6 +1170,7 @@ class ExplorationTests(unittest.TestCase):
             ):
                 plot.return_value.start.side_effect = RuntimeError("No desktop")
                 self.assertEqual(exp.main(argv), 1)
+                prompt.assert_not_called()
                 connect.assert_not_called()
                 plot.return_value.close.assert_called_once()
                 self.assertFalse(target.exists())

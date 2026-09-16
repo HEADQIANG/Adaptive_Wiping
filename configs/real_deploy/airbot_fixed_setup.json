@@ -5,7 +5,7 @@
   "training_config": "configs/real_training/real_training_programmed_wide1200.yaml",
   "policy": "runs/real_training/training_programmed_wide1200_v1/policy.pt",
   "policy_sha256": "7684df76171cc3db73bb1468c16dda8d72538ecf1896253eb8bd3c1c7066dc9d",
-  "collection_session": "runs/real_training/programmed_demonstrations/direct_start_session_004",
+  "collection_session": "runs/real_demonstrations/programmed/direct_start_session_004",
   "collection_session_sha256": "588df9bfb4007f53bf0b362486f9c9bbd4165010e17b3251664084661ac73a14",
   "same_hardware_and_sponge_confirmed": true,
   "confirmation_note": "2026-09-13: Operator confirmed unchanged hardware and same sponge, accepted the scoped encoder exception, requested motion tracking and orientation errors be recorded only, and confirmed all other listed onsite conditions. This is operator confirmation, not software proof of hardware validation or calibration.",

@@ -40,8 +40,8 @@ calibrate electronic bias, or certify hardware readiness.
 
 Both current `pretrain_paper*.yaml` files select
 `simulation.ft_frame_profile: kwr52_left_v1`. The output directories are now
-`runs/sim_pretrain/pretrain_paper_kwr52_left_v1` and
-`runs/sim_pretrain/normal_kwr52_left_v1` respectively.
+`runs/sim_training/pretrain_paper_kwr52_left_v1` and
+`runs/sim_training/normal_kwr52_left_v1` respectively.
 Missing `ft_frame_profile` or explicit `legacy` preserves the old orientation.
 UR5e comparisons explicitly retain `legacy`. The profile is independent of
 the AIRBOT tool-mount geometry. Original XML/mesh assets are not edited.

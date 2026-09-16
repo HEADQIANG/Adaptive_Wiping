@@ -42,11 +42,11 @@
 ```bash
 cd /media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.airbot_initial_pose teach \
-  --execute --output runs/real_training/real_robot/contact_motion_start_001.json \
+  --execute --output runs/real_exploration/contact_motion_start_001.json \
   --label contact_motion_start --tool-note "28 mm sponge; actual mount and SDK end-frame definition"
 ```
 
-执行前安全支撑机械臂，再输入 `DRAG`。待显示重力补偿已激活，缓慢拖到目标起点，
+执行带 `--execute` 的命令前安全支撑机械臂，不再输入启动口令。待显示重力补偿已激活，缓慢拖到目标起点，
 海绵面与被接触平面平行、未压缩底面距平面 1 mm。确认整个 50 mm 横移路径的表面高度
 及间隙误差，避免突出物、斜面和硬安装件触碰。静止且已安全支撑后按 `S` 或 `s`，
 无需回车，检查通过即保存并自动退出，不再需要 `Q`。idle 不保证保持位置，
@@ -106,17 +106,17 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training e
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run \
-  --mode contact-no-ft --execute --time-scale 5 --output runs/real_training/real_robot/contact_motion_slow_001.jsonl
+  --mode contact-no-ft --execute --time-scale 5 --output runs/real_exploration/contact_motion_slow_001.jsonl
 ```
 
 之后，在现场批准正式速度时使用同一轨迹的原时间参数：
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run \
-  --mode contact-no-ft --execute --time-scale 1 --output runs/real_training/real_robot/contact_motion_001.jsonl
+  --mode contact-no-ft --execute --time-scale 1 --output runs/real_exploration/contact_motion_001.jsonl
 ```
 
-必须输入 `CONTACT-NO-FT` 才启动连接/验证；原 `EXPLORE` 确认词不能用于无力模式。
+`--execute` 授权启动连接/验证，不再等待启动口令；仍须显式选择 `--mode contact-no-ft` 且配置模式一致。
 过程中保留起点、工作空间、关节速度/位置、电机错误、姿态、跟踪误差、控制权和超时检查。
 Ctrl+C/SIGTERM/EOF 或故障请求 SDK 软件停止，但无法替代物理急停、防坠支撑和人工监护。
 回撤完成后，先按现场规程安全支撑，再输入 `IDLE`；日志有 `session_complete` 才表示正常交接。
@@ -152,4 +152,4 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m unittest discover -s te
 覆盖无力模式不导入传感器、不查询力、完整 400 点轨迹、模式隔离、压缩预算、
 跟踪/超时/中断停止、NULL 六轴 protobuf 请求。离线预览及未确认配置拒绝执行已验证。
 原 `simulation.py` 哈希和历史训练来源检查保持不变。本次未连接硬件、未执行运动，
-`runs/real_training/real_robot` 尚无起点文件；这些测试不替代物理接触验收。
+`runs/real_exploration` 尚无起点文件；这些测试不替代物理接触验收。

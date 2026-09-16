@@ -97,12 +97,12 @@ waypoints, linearly interpolated at 100 Hz. This warm-up/interpolation choice
 is an engineering deployment default, not specified by the paper. At runtime
 oversized predictions stop rather than being silently clipped or retried.
 
-Before using `run`, obtain a calibrated `paper_downstream` policy without the
+Before using the sensor-calibrated `run`, obtain an `airbot_sensor_calibrated_offline` policy without the
 source encoder quality or out-of-range warnings, and fill the measured/approved
 fields in `configs/real_deploy/airbot_deployment.json`. Do not change native metadata or
 warning flags to make preflight pass. In particular, supply matching calibration
-identity, exact reviewed policy hash, measured `base_from_sdk`, `end_from_tcp`,
-`sensor_to_ft_frame`, electronic bias, initial TCP, fixed SDK orientation, and
+identity, exact reviewed policy hash, measured `sensor_to_ft_frame`, electronic bias,
+`initial_sdk_position_m`, fixed SDK orientation, and
 site-approved position/speed/current/force/torque limits. Transforms are 4x4
 homogeneous matrices; `sensor_to_ft_frame` maps sensor coordinates into FT axes
 and includes the torque lever-arm term. Bias is subtracted before transformation;
@@ -135,10 +135,10 @@ the physical emergency stop and support are available, then use a new log path:
 
 ```bash
 python -m scripts.real_deploy run --config configs/real_deploy/airbot_deployment.json \
-  --execute --output runs/real_training/real_robot/policy_run_001.jsonl
+  --execute --output runs/real_exploration/policy_run_001.jsonl
 ```
 
-The attended `DEPLOY` confirmation occurs before connection. Live preflight
+The explicit `--execute` flag authorizes attended execution without a startup passphrase. Live preflight
 checks robot/EEF identity, idle/stationary start, ownership and fresh FT. Every
 tick checks state, joint limits, velocity, tracking, orientation and force limits.
 Missed deadlines stop without catch-up. Errors/SIGINT/SIGTERM request the SDK

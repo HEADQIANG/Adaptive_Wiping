@@ -95,6 +95,9 @@ def main():
     )
     fig.tight_layout(rect=(0, 0.035, 1, 0.91), h_pad=1.6)
     output = args.output or args.log.with_name(args.log.stem + "_curves.png")
+    from scripts.shared.run_paths import new_output
+
+    output = new_output(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=170, facecolor="white")
     plt.close(fig)

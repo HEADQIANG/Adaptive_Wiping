@@ -67,8 +67,8 @@ class PaddingTests(unittest.TestCase):
 class RealPaddingAudit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.session = ROOT / "runs/real_training/programmed_demonstrations/direct_start_session_004"
-        cls.exploration = ROOT / "runs/real_training/real_robot/exploration_tared_plot_003.jsonl"
+        cls.session = ROOT / "runs/real_demonstrations/programmed/direct_start_session_004"
+        cls.exploration = ROOT / "runs/real_exploration/exploration_tared_plot_003.jsonl"
         if not (cls.session / "demo_08.json").exists() or not cls.exploration.exists():
             raise unittest.SkipTest("Completed real program audit fixture not installed")
         cls.meta, cls.exp, cls.demos = assemble(cls.exploration, cls.session, programmed_hold_last=True)

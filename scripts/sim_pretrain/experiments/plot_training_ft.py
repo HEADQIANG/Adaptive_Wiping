@@ -296,6 +296,9 @@ def main():
     parser.add_argument("--indices", type=int, nargs="+", default=[0, 83])
     parser.add_argument("--subset-manifest", type=Path)
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     visualize(args.dataset_config, args.output, args.indices, args.subset_manifest)
 
 

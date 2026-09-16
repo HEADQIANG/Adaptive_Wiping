@@ -77,7 +77,7 @@ armature   5.0    2.5    1.666667  1.25   1.0    0.833333
 
 ```bash
 conda activate clean
-python -m scripts.sim_pretrain.experiments.diagnose_reversal --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_pretrain/reversal_diagnosis_inertia_repeat
+python -m scripts.sim_pretrain.experiments.diagnose_reversal --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_data/reversal_diagnosis_inertia_repeat
 python -m unittest discover -s tests -t . -p 'test_pretraining.py' -v
 ```
 

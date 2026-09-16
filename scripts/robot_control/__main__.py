@@ -11,7 +11,6 @@ import time
 import tty
 from contextlib import contextmanager
 from dataclasses import asdict
-from datetime import datetime, timezone
 from pathlib import Path
 
 from scripts.shared.paths import read_path, writable_path
@@ -75,16 +74,6 @@ def save_pose(session, output):
     return record
 
 
-def to_sdk_pose(position, quaternion, calibration):
-    import numpy as np
-    from scipy.spatial.transform import Rotation
-
-    frame = calibration.frames
-    sdk_r = frame.base[:3, :3].T @ Rotation.from_quat(quaternion).as_matrix() @ frame.tcp[:3, :3].T
-    sdk_q = Rotation.from_matrix(sdk_r).as_quat()
-    return frame.to_end(np.asarray(position), sdk_q).tolist(), sdk_q.tolist()
-
-
 def interact(session, *, keyboard=False, output=None):
     pending = None
     with terminal():
@@ -104,23 +93,20 @@ def interact(session, *, keyboard=False, output=None):
                     if pending == "idle":
                         session.finish(supported=True)
                         keyboard = False
-                    elif pending == "keyboard":
-                        session.hold()
-                        keyboard = True
-                    else:
-                        session.switch(pending)
-                        keyboard = False
                 pending = None
                 continue
-            if key in ("q", "i", "g", "h"):
-                pending = {"q": "quit", "i": "idle", "g": "gravity_comp", "h": "servo"}[key]
+            if key in ("q", "i"):
+                pending = {"q": "quit", "i": "idle"}[key]
                 print(
                     f"\nSupport arm and confirm {pending}: press Y; any other key cancels.",
                     flush=True,
                 )
+            elif key in ("g", "h"):
+                session.switch("gravity_comp" if key == "g" else "servo")
+                keyboard = False
             elif key == "k":
-                pending = "keyboard"
-                print("\nSupport arm and confirm keyboard servo mode: press Y.", flush=True)
+                session.hold()
+                keyboard = True
             elif key == "c":
                 if output is None:
                     print("\nNo --output pose path configured.", flush=True)
@@ -137,7 +123,7 @@ def parser():
     p.add_argument(
         "--execute",
         action="store_true",
-        help="Enable attended hardware mode after explicit confirmation",
+        help="Authorize attended hardware execution without a startup passphrase",
     )
     p.add_argument("--config", default="configs/robot_control/basic_control.json")
     p.add_argument("--host", default="127.0.0.1")
@@ -145,11 +131,10 @@ def parser():
     p.add_argument("--joints", type=float, nargs=6, metavar="RAD")
     p.add_argument("--position", type=float, nargs=3, metavar="M")
     p.add_argument("--quaternion", type=float, nargs=4, metavar="XYZW")
-    p.add_argument("--frame", choices=("sdk", "tcp"), default="sdk")
-    p.add_argument("--calibration", help="Verified calibration record, required for --frame tcp")
+    p.add_argument("--frame", choices=("sdk",), default="sdk", help="SDK reference coordinates")
     p.add_argument("--output", type=Path, help="New stationary pose JSON (never overwritten)")
     p.add_argument(
-        "--log", type=Path, help="New session JSONL (default: unique runs/robot_control path)"
+        "--log", type=Path, help="New session JSONL (default: unique runs/real_deploy/robot_control path)"
     )
     p.add_argument(
         "--keys", help="Offline keyboard sequence; hardware uses attended keyboard input"
@@ -202,22 +187,18 @@ def main(argv=None):
         if args.command == "capture-pose" and args.output is None:
             p.error("capture-pose requires --output")
         pose = (args.position, args.quaternion)
-        if args.frame == "tcp":
-            if args.command != "move-pose" or args.calibration is None:
-                p.error("TCP frame is only valid for move-pose with --calibration")
-            from scripts.shared.airbot_calibration import Calibration
+        if args.execute and not sys.stdin.isatty():
+            p.error("Hardware control requires an attended terminal")
+        from scripts.shared.run_paths import RunOutputs
 
-            calibration = Calibration(args.calibration)
-            if calibration.record["robot_id"] != cfg["robot_sn"]:
-                raise ValueError("Calibration robot identity does not match this setup")
-            pose = to_sdk_pose(*pose, calibration)
+        outputs = RunOutputs()
         if args.output:
-            args.output = writable_path(args.output)
+            args.output = outputs.path(args.output)
             if args.output.exists():
                 raise FileExistsError(args.output)
-        path = writable_path(
+        path = outputs.path(
             args.log
-            or f"runs/robot_control/session_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S_%f')}.jsonl"
+            or "runs/real_deploy/robot_control/session.jsonl"
         )
         if path.exists():
             raise FileExistsError(path)
@@ -229,7 +210,9 @@ def main(argv=None):
             print(
                 "No collision planning. Idle/disconnect may let the arm fall. Server must use --no-return."
             )
-            if input("Type CONTROL to permit this session: ").strip() != "CONTROL":
+            if args.command == "idle" and input(
+                "Arrange safe support; type IDLE to release control: "
+            ).strip() != "IDLE":
                 print("Cancelled without connecting.")
                 return 0
         path.parent.mkdir(parents=True, exist_ok=True)

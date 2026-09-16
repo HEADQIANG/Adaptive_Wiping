@@ -232,7 +232,7 @@ def validate_compression_budget(cfg):
     positive(cfg.get("contact_geometry_uncertainty_m"), "contact_geometry_uncertainty_m")
     positive(cfg.get("compression_reserve_m"), "compression_reserve_m")
     # The geometry bound must include gap error, table height variation along the
-    # slide, SDK/TCP error and tool-edge motion under the permitted orientation error.
+    # slide, SDK position error and tool-edge motion under the permitted orientation error.
     required = (
         PRESS_DEPTH_M
         - INITIAL_GAP_M
@@ -654,12 +654,12 @@ def execute(robot, sensor, cfg, record, stream, time_scale=1.0, finish=wait_for_
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", nargs="?", default="preview", choices=("preview", "check", "run"))
-    parser.add_argument("--mode", choices=MODES, default="force-guarded")
+    parser.add_argument("--mode", choices=("manual-start", *MODES), default="manual-start")
     parser.add_argument("--config", type=Path)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=50051)
     parser.add_argument("--execute", action="store_true")
-    parser.add_argument("--output", type=Path, help="New JSONL log; never overwritten")
+    parser.add_argument("--output", type=Path, help="JSONL log; runs outputs get an automatic MMDD_HHMMSS directory")
     parser.add_argument("--plot", action="store_true", help="Show tared F/T in a separate read-only process")
     parser.add_argument("--plot-window", type=float, default=10.0, help="Rolling plot window, 0.5..300 seconds")
     parser.add_argument("--plot-hz", type=float, default=10.0, help="Display refresh, 1..30 Hz; control remains 100 Hz")
@@ -667,20 +667,21 @@ def main(argv=None):
         "--time-scale",
         type=float,
         default=1.0,
-        help="1 matches simulation; 2..10 slower commissioning, not encoder data",
+        help="1 uses the 4-second real protocol; 2..10 slower commissioning, not encoder data",
     )
     args = parser.parse_args(argv)
-    if args.plot and args.mode != "force-guarded":
-        parser.error("--plot requires force-guarded mode with measured, tared force data")
+    if args.plot and args.mode not in ("manual-start", "force-guarded"):
+        parser.error("--plot requires manual-start or force-guarded measured, tared force data")
     if not math.isfinite(args.plot_window) or not 0.5 <= args.plot_window <= 300:
         parser.error("plot-window must be finite and in [0.5, 300]")
     if not math.isfinite(args.plot_hz) or not 1 <= args.plot_hz <= 30:
         parser.error("plot-hz must be finite and in [1, 30]")
     if args.config is None:
         filename = {
-            "contact-no-ft": "airbot_contact_motion.json",
-            "air": "airbot_air_motion.json",
-            "force-guarded": "airbot_exploration.json",
+            "manual-start": "real_training/airbot_exploration_manual.json",
+            "contact-no-ft": "real_training/airbot_contact_motion.json",
+            "air": "robot_control/airbot_air_motion.json",
+            "force-guarded": "real_training/airbot_exploration.json",
         }[args.mode]
         args.config = ROOT / "configs" / filename
     if not math.isfinite(args.time_scale) or not 1 <= args.time_scale <= 10:
@@ -695,9 +696,18 @@ def main(argv=None):
                     "live_plot_opened": False,
                     "sample_hz": SAMPLE_HZ,
                     "mode": args.mode,
-                    "force_monitoring": args.mode == "force-guarded",
+                    "force_monitoring": args.mode in ("manual-start", "force-guarded"),
+                    "force_limits_enforced": args.mode == "force-guarded",
+                    "joint_position_limits_enforced": args.mode != "manual-start",
+                    **({"drag_measured_joint_speed_stop_enforced": False,
+                        "servo_measured_joint_speed_stop_enforced": True}
+                       if args.mode == "manual-start" else {}),
+                    "start_matching_required": args.mode != "manual-start",
+                    "stationary_acceptance_required": args.mode != "manual-start",
+                    "keyboard_flow": ["h: hold", "s: tare and explore", "IDLE: release after return"]
+                    if args.mode == "manual-start" else None,
                     "software_tare_duration_s": TARE_DURATION_S
-                    if args.mode == "force-guarded" else None,
+                    if args.mode in ("manual-start", "force-guarded") else None,
                     "contact_expected": args.mode != "air",
                     "minimum_air_start_clearance_m": MIN_AIR_START_CLEARANCE_M
                     if args.mode == "air"
@@ -720,8 +730,15 @@ def main(argv=None):
     if args.action == "run":
         if not args.execute or not sys.stdin.isatty() or args.output is None:
             parser.error("run requires --execute, an interactive terminal and --output")
+        from scripts.shared.run_paths import new_output
+
+        args.output = new_output(args.output)
         if args.output.exists():
             parser.error("Output already exists")
+    if args.mode == "manual-start":
+        from scripts.real_training.manual_exploration import main as manual_main
+
+        return manual_main(args)
     client = sensor = live_plot = None
     previous_sigterm = None
     try:
@@ -737,7 +754,7 @@ def main(argv=None):
                 )
             else:
                 print(
-                    "Verify server --no-return, tool/TCP/table calibration, 9 mm compression allowance,"
+                    "Verify server --no-return, fixed tool orientation/table setup, 9 mm compression allowance,"
                 )
             print(
                 "approved limits, physical emergency stop, support and a clear entire swept path."
@@ -764,11 +781,6 @@ def main(argv=None):
                 f"orientation reference threshold: {running_orientation_limit(cfg):g} rad; "
                 f"start orientation tolerance: {ORIENTATION_TOLERANCE_RAD:g} rad."
             )
-            token = {
-                "air": "AIR-MOTION",
-                "contact-no-ft": "CONTACT-NO-FT",
-                "force-guarded": "EXPLORE",
-            }[args.mode]
             if args.mode == "air":
                 print(
                     "No force sensor. Keep the ENTIRE robot/tool/cable swept path clear; no table contact permitted."
@@ -783,9 +795,7 @@ def main(argv=None):
                 print(
                     "Fixed 10 mm downward travel; estimated nominal compression 9 mm from the measured 1 mm gap."
                 )
-            if input(f"Type {token} to enable motion (anything else cancels): ").strip() != token:
-                print("Cancelled without connecting.")
-                return 0
+            print("--execute authorizes motion after device and start checks.")
             previous_sigterm = signal.signal(signal.SIGTERM, interrupt_on_signal)
             if args.plot:
                 from scripts.real_training.exploration_live_plot import ExplorationLivePlot

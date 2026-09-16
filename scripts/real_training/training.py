@@ -329,6 +329,11 @@ def _policy_payload(checkpoint):
             "bindings": checkpoint["bindings"],
             "epochs": checkpoint["epochs"],
             "training_contract": training_contract(checkpoint["config"]),
+            "training_config": {
+                **copy.deepcopy(checkpoint["config"]),
+                **{key: str(resolve(checkpoint["config"][key]).resolve())
+                   for key in ("raw_data", "encoder", "output_dir")},
+            },
             "history": "FT[k-4:k+1] -> h[k+1]-h[k], k=4..23",
             "xy_units": "m",
             "delta_h_units": "m",

@@ -49,9 +49,9 @@ From the project root, using new output directories:
 conda activate clean
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m unittest discover -s tests -t . -p 'test_cartesian_experiment.py' -v
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m unittest discover -s tests -v
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.contact_breakaway --output runs/sim_pretrain/contact_breakaway_v2
-MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.contact_control_experiment --output runs/sim_pretrain/contact_cartesian_v2 --gif
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.analyze_contact_experiment --rig runs/sim_pretrain/contact_breakaway_v2 --robot runs/sim_pretrain/contact_cartesian_v2
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.contact_breakaway --output runs/sim_data/contact_breakaway_v2
+MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.contact_control_experiment --output runs/sim_data/contact_cartesian_v2 --gif
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.analyze_contact_experiment --rig runs/sim_data/contact_breakaway_v2 --robot runs/sim_data/contact_cartesian_v2
 ```
 
 Use `/home/wp/miniconda3/envs/clean/bin/python` if activation is unavailable.

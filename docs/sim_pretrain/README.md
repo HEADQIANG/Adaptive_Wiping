@@ -1,5 +1,14 @@
 # 仿真预训练
 
+2026-09-16：针对宽范围 1200 条数据的潜变量塌缩，新增
+[编码器—解码器联合重训](joint_vae_retraining.md)，使用较小 KL 权重、预热和无 Dropout
+训练；入口 `python -m scripts.sim_pretrain retrain-wide-vae`。原实验保留，
+分段排查结果见 [塌缩诊断](latent_collapse_diagnosis.md)。
+
+2026-09-15 输出规则更新：新结果自动增加 `MMDD_HHMMSS` 时间目录（如 `0915_142205`）。
+后续关联、状态查询及续跑使用终端打印的实际路径；多阶段训练使用打印的 `run_config.yaml`。
+下文未带时间层的历史路径示例不代表新文件的实际路径，完整新命令见 [runs 输出操作步骤](../run_outputs.md)。
+
 与真机 003 的幅值搜索：原 90 组及扩展增益后的新增 135 组诊断结果，见 [幅值对照搜索](match_real_amplitude.md)。
 新增 128 组分层随机覆盖诊断（含逐时刻包络、六维联合容差和独立运动验收）也见上述文档。
 用户授权取消运动筛选后的 [2000 条采集与 1000 轮训练](wide_training_2000.md) 使用独立实验入口。
@@ -61,18 +70,20 @@ python -m scripts.sim_pretrain sanity --config configs/sim_pretrain/pretrain_pap
 研究采集是否保留运动不合格轨迹，必须显式选择原有研究选项，不能与严格验收混淆。
 
 ```bash
-python -m scripts.sim_pretrain collect --config configs/sim_pretrain/pretrain_paper.yaml
-python -m scripts.sim_pretrain train --config configs/sim_pretrain/pretrain_paper.yaml
-python -m scripts.sim_pretrain evaluate --config configs/sim_pretrain/pretrain_paper.yaml
-python -m scripts.sim_pretrain export --config configs/sim_pretrain/pretrain_paper.yaml
+# 替换为 sanity 实际打印的 run_config.yaml，不继续使用原模板
+SIM_CONFIG=runs/sim_training/0915_142205/run_config.yaml
+python -m scripts.sim_pretrain collect --config "$SIM_CONFIG"
+python -m scripts.sim_pretrain train --config "$SIM_CONFIG"
+python -m scripts.sim_pretrain evaluate --config "$SIM_CONFIG"
+python -m scripts.sim_pretrain export --config "$SIM_CONFIG"
 ```
 
-默认输出由配置的 `output_dir` 指定在 `runs/sim_pretrain/` 下；新实验使用新名称。
+默认输出由配置的 `output_dir` 指定在 `runs/sim_training/` 下；新实验使用新名称。
 小规模全流程软件验证可运行：
 
 ```bash
 MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-  python -m scripts.sim_pretrain smoke-test --output runs/sim_pretrain/smoke_001
+  python -m scripts.sim_pretrain smoke-test --output runs/sim_training/smoke_001
 ```
 
 该测试仅采集 2/1/1 条真实仿真轨迹并训练 2 轮，显式采用研究 record-only 接触策略，
@@ -87,7 +98,7 @@ MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 ```bash
 python -m scripts.sim_pretrain evaluate \
   --config archive/sim_pretrain/normal_mu1p2_pretraining_v1/normal/config.json \
-  --output runs/sim_pretrain/historical_evaluation_001
+  --output runs/sim_training/historical_evaluation_001
 ```
 
 该入口适用于原预训练格式；独立续训/修复格式按其专题工具读取，不把不同格式混用。

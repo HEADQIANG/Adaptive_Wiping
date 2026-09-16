@@ -22,7 +22,7 @@ conda activate clean
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.vae_ablation \
   --dataset-config archive/sim_pretrain/two_control_pretraining_v2/normal/config.json \
-  --output runs/sim_pretrain/normal_vae_ablation_v1
+  --output runs/sim_training/normal_vae_ablation_v1
 ```
 
 The output must not exist. There is no resume or overwrite option. A failed or
@@ -86,7 +86,7 @@ proof of absolute absence of information. No labels enter the VAE training API.
 
 `protocol.json`, `manifest.json`, `original_hashes.json`, `source_hashes.json`
 record settings, subset rows, train-only preprocessing checks, split uniqueness
-and original/source/runs/sim_pretrain/config hashes. `progress.json` and per-run `status.json`
+and original/source/runs/sim_training/config hashes. `progress.json` and per-run `status.json`
 record progress and failures. Each training group saves `history.json`, `best.pt`,
 `last.pt`, training and beta plots; non-finite losses or gradients stop that group.
 Baseline checkpoints are referenced, not copied or rewritten.
@@ -114,7 +114,7 @@ import sys
 sys.path.insert(0, "scripts")  # repository root; avoids the ROS package named scripts
 from vae_ablation import FrozenAblationEncoder
 
-encoder = FrozenAblationEncoder("runs/sim_pretrain/normal_vae_ablation_v1/<selected-run>/encoder.pt")
+encoder = FrozenAblationEncoder("runs/sim_training/normal_vae_ablation_v1/<selected-run>/encoder.pt")
 mu = encoder.encode(raw_ft)  # raw local FT [B,400,6] -> [B,5], no gradients
 ```
 
@@ -134,7 +134,7 @@ python -m unittest discover -s tests -v
 The focused test module checks exact original model/loss equivalence, warmup
 boundaries, AE versus sampled VAE paths, held-out isolation, both architecture
 exports, frozen gradients, finite-loss failure handling, selection epochs and
-tie order, overwrite protection, original runs/sim_pretrain/model/source hashes, PCA/ridge,
+tie order, overwrite protection, original runs/sim_training/model/source hashes, PCA/ridge,
 and synthetic informative/collapsed reconstruction and property diagnostics.
 Test-only short runs do not expose a production CLI shortcut around the protocol.
 An end-to-end synthetic probe test also checks all four representations, five
@@ -196,10 +196,10 @@ No training, simulation or test process from this task remains running.
 Read the completed results or open the saved figures (no new training):
 
 ```bash
-less runs/sim_pretrain/normal_vae_ablation_v1/report.md
-less runs/sim_pretrain/normal_vae_ablation_v1/probes/report.md
-xdg-open runs/sim_pretrain/normal_vae_ablation_v1/probes/property_scatter.png
-xdg-open runs/sim_pretrain/normal_vae_ablation_v1/baseline/reconstructions/test_000.png
+less runs/sim_training/normal_vae_ablation_v1/report.md
+less runs/sim_training/normal_vae_ablation_v1/probes/report.md
+xdg-open runs/sim_training/normal_vae_ablation_v1/probes/property_scatter.png
+xdg-open runs/sim_training/normal_vae_ablation_v1/baseline/reconstructions/test_000.png
 ```
 
 Do not interpret the failed small AEs as successful new VAE models or automatically

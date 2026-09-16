@@ -524,6 +524,9 @@ def main():
     else:
         if args.dataset_config is None:
             parser.error("--dataset-config is required for training")
+        from scripts.shared.run_paths import new_output
+
+        args.output = new_output(args.output)
         continue_training(args.dataset_config, args.output, args.additional_epochs, args.checkpoint)
 
 

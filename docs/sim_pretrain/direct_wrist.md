@@ -3,7 +3,7 @@
 > 目录已分类迁移：当前主流程见 [本类操作入口](README.md)。代码块使用新运行目录，历史结果引用归档；新配置、源码与旧实验不可混作原地续训。
 
 The default `configs/sim_pretrain/pretrain_paper.yaml` now selects `tool_mount: direct_wrist_v3`
-and writes new output under `runs/sim_pretrain/`. Historical results remain in
+and writes new output under `runs/sim_training/`. Historical results remain in
 `archive/sim_pretrain/pretrain_paper_direct_wrist_v3`. The tabletop base is unchanged.
 This is a paper-like engineering layout, not the paper's UR5e or a calibrated
 AIRBOT bare-flange model.
@@ -53,7 +53,7 @@ Use `/home/wp/miniconda3/envs/clean/bin/python` if conda activation is unavailab
 Headless preview, with a new filename for every export:
 
 ```bash
-MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.visualize_wiping --closeup --no-viewer --gif runs/sim_pretrain/direct_wrist_closeup.gif --mu 0.9 --stiffness 1000 --width 0.02 --gain 300 --speed 1
+MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.visualize_wiping --closeup --no-viewer --gif runs/sim_data/direct_wrist_closeup.gif --mu 0.9 --stiffness 1000 --width 0.02 --gain 300 --speed 1
 ```
 
 Add `--collisions` to inspect collision proxies; omit `--closeup` for an overview.

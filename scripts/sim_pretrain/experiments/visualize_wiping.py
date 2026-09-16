@@ -270,6 +270,9 @@ def main():
         parser.error("Playback speed must be between 0.1 and 4")
     if args.no_viewer and not args.gif:
         parser.error("--no-viewer requires --gif")
+    from scripts.shared.run_paths import new_output
+
+    args.gif = new_output(args.gif)
     if args.gif and Path(args.gif).exists():
         parser.error("GIF already exists; choose a new path")
     cfg = load_config(args.config)

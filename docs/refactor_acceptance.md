@@ -19,15 +19,15 @@
 
 主回归使用 `clean` 环境；SDK 环境保持 `arm-sdk==5.2.2`、NumPy 2.2.6，
 补装清单中原本缺失的 SciPy 1.15.3 与 PyYAML 6.0.3，没有替换 SDK 或合并环境。
-测试日志保存到 [分类验收目录](../runs/robot_control/refactor_verification_001/)。
+测试日志保存到 [分类验收目录](../runs/real_deploy/robot_control/refactor_verification_001/)。
 
 ## 数据与模型流程
 
-- [仿真闭环报告](../runs/sim_pretrain/refactor_smoke_001/smoke_report.json)：MuJoCo 采集 2/1/1 条训练/验证/测试轨迹，训练 2 轮、评估、导出及冻结编码器加载通过。
+- [仿真闭环报告](../runs/sim_training/refactor_smoke_001/smoke_report.json)：MuJoCo 采集 2/1/1 条训练/验证/测试轨迹，训练 2 轮、评估、导出及冻结编码器加载通过。
 - 合成示教流程：8 折验证、160 个窗口，各分支 2 轮训练、独立导出加载通过；临时测试数据由测试自动清理，不冒充真实采集。
-- [历史模型只读评估](../runs/sim_pretrain/refactor_evaluation_001/evaluation.json)：测试 MSE 为 `0.016111869364976883`，与原记录一致。
+- [历史模型只读评估](../runs/sim_training/refactor_evaluation_001/evaluation.json)：测试 MSE 为 `0.016111869364976883`，与原记录一致。
 - [历史策略离线回放](../runs/real_deploy/refactor_replay_001/report.json)：8 条示教，各 1001 tick，流式/批量预测最大差异为 `0.0`。
-- [SDK 环境离线点动日志](../runs/robot_control/refactor_sdk_preview_001.jsonl)：假机器人执行有限关节目标后进入 idle，`hardware_connected=false`。
+- [SDK 环境离线点动日志](../runs/real_deploy/robot_control/refactor_sdk_preview_001.jsonl)：假机器人执行有限关节目标后进入 idle，`hardware_connected=false`。
 
 仿真 smoke 显式采用研究 record-only 接触策略：轨迹被记录不代表接触运动验收通过，
 不能据此证明模型质量或真实扫掠路径安全。数值一致性与软件流程通过也不是部署许可。

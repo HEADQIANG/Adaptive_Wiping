@@ -24,6 +24,12 @@ def main():
         parser.error("--output is only valid with evaluate; other stages use config output_dir")
     try:
         cfg = load_config(args.config)
+        from scripts.shared.run_paths import new_output, new_run_config
+
+        if args.stage == "sanity":
+            cfg = new_run_config(cfg)
+        if args.output:
+            args.output = new_output(args.output)
         if args.stage in ("sanity", "collect"):
             from scripts.sim_pretrain.collection import collect, sanity
 

@@ -1,5 +1,9 @@
 # 探索按压协议与运行步骤
 
+2026-09-15：默认探索已改为 `manual-start`，相对轨迹不变；按键、取消的验收及新训练关联见
+[手动起点操作](real_training/manual_start_exploration.md)。下文起点静止清零说明属于显式旧
+`force-guarded` 模式；新模式清零只检查力数据有效性和覆盖，不做静止或载荷阈值验收。
+
 当前仿真两份默认配置已增加每段起止各 0.2 秒平滑加减速，保持下文的阶段时长和位移，
 但峰值速度及逐点目标与真机分段匀速协议不同。真机代码未改。
 仿真新命令、过渡参数和数据兼容说明见 [平滑探索](sim_pretrain/smooth_exploration.md)。
@@ -34,7 +38,7 @@
 执行 sanity、采集与训练。自定义配置及历史快照的显式 `press_speed` 不会自动迁移。
 
 真机按 [探索操作步骤](real_training/airbot_exploration.md) 完成现场检查后运行，
-保持原力限值、确认口令和异常停止流程，不因减速跳过安全检查。
+保持原力限值、显式 `--execute` 授权和异常停止流程，不因减速跳过安全检查；启动口令已统一取消。
 2026-09-12 已按用户要求移除项目 XYZ 工作空间边界，旧字段不再生效，
 详见 [边界移除与运行步骤](robot_control/workspace_bounds_removed.md)。
 名义压缩由 `19 mm` 降为 `9 mm`（起始间隙 `1 mm`）；无力接触模式仍须加上
@@ -60,13 +64,13 @@ air / contact-no-ft 模式不读取传感器，也不执行清零。
 
 # 仅在有人监护、完成现场安全检查的终端中运行，使用未存在的输出文件名
 env PYTHONPATH='/media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping' \
-  /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run \
+  /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run --mode force-guarded \
   --config configs/real_training/airbot_exploration.json \
   --execute --time-scale 1 \
-  --output runs/real_training/real_robot/exploration_tared_001.jsonl
+  --output runs/real_exploration/exploration_tared_001.jsonl
 ```
 
-输入 `EXPLORE` 前确认海绵未接触桌面、起点间隙为已实测的 1 mm。显示
+执行带 `--execute` 的命令前确认海绵未接触桌面、起点间隙为已实测的 1 mm。显示
 `Software tare` 后继续保持静止，不触碰工具。清零期间持续检查起点、原始载荷
 与传感器新鲜度，并验证机器人静止；失败或中断不会启动探索。此时仍是 idle，
 软件不保证保持位置，现场支撑不得向力传感器下游的工具施加载荷。

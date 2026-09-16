@@ -17,7 +17,7 @@ From the project root:
 conda activate clean
 python -m unittest discover -s tests -t . -p 'test_contact_diagnosis.py' -v
 python -m unittest discover -s tests -t . -p 'test_pretraining.py' -v
-python -m scripts.sim_pretrain.experiments.diagnose_contact --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_pretrain/contact_diagnosis_repeat
+python -m scripts.sim_pretrain.experiments.diagnose_contact --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_data/contact_diagnosis_repeat
 ```
 
 The verified interpreter is `/home/wp/miniconda3/envs/clean/bin/python` if conda

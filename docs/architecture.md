@@ -1,6 +1,7 @@
 # 结构与归档说明
 
 五类业务模块与 README 导航一致，`shared` 放共用路径、数据、几何和模型组件。
+运行产物按七类用途存储，独立于代码的五个模块，见 [runs 分类说明](runs_layout.md)。
 当前业务包名为 `scripts`，安装更新、历史多版本映射见 [包改名说明](package_rename.md)。
 底层 `robot_control.client/adapter/safety` 供示教、探索、部署及基础控制复用。
 `shared.encoder/policy` 负责推理，离线训练执行器不进入基础控制或部署的导入链。
@@ -28,7 +29,7 @@ python -m scripts.shared.artifacts resolve outputs/normal_mu1p2_pretraining_v1/n
 该保护不是操作系统级只读挂载，外部编辑器和本地第三方程序仍有文件访问权限。
 
 SDK 5.2.2 的 Python 日志路径固定为 `logs/app.log`，不能通过环境变量配置。
-根目录 `logs` 因此仅为指向 `runs/robot_control/sdk_logs` 的链接，实际新日志仍归机械臂控制分类。
+根目录 `logs` 因此仅为指向 `runs/real_deploy/robot_control/sdk_logs` 的链接，实际新日志仍归机械臂控制分类。
 它不是历史日志目录，也不是旧代码入口；原始历史日志保留在归档中。
 
 ## 当前运行文档

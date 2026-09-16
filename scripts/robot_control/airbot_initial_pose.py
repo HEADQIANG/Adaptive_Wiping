@@ -127,8 +127,7 @@ def save_record(path, samples, metadata):
         "metadata": metadata,
         "coordinate_semantics": {
             "reference_frame": "SDK configured reference frame; verify server configuration",
-            "end_frame": "SDK configured end frame; not a calibrated sponge TCP",
-            "sponge_tcp_calibrated": False,
+            "end_frame": "SDK configured end frame",
             "hardware_timestamp_available": False,
             "joint_and_pose_reads_atomic": False,
         },
@@ -243,12 +242,17 @@ def main(argv=None):
         "--output", type=Path, help="New JSON file; existing files are never overwritten"
     )
     parser.add_argument("--label", default="wiping_start")
-    parser.add_argument("--tool-note", default="unspecified; sponge TCP not calibrated")
+    parser.add_argument("--tool-note", default="unspecified; SDK end coordinates")
     args = parser.parse_args(argv)
     if args.action == "capture-idle":
         if args.execute:
             parser.error("capture-idle is read-only; omit --execute")
-        if args.output is None or args.output.exists():
+        if args.output is None:
+            parser.error("capture-idle requires --output pointing to a new JSON file")
+        from scripts.shared.run_paths import new_output
+
+        args.output = new_output(args.output)
+        if args.output.exists():
             parser.error("capture-idle requires --output pointing to a new JSON file")
         args.output.parent.mkdir(parents=True, exist_ok=True)
     if args.action == "teach":
@@ -258,6 +262,9 @@ def main(argv=None):
             parser.error("teach requires an attended interactive terminal")
         if args.output is None:
             parser.error("teach requires --output pointing to a new JSON file")
+        from scripts.shared.run_paths import new_output
+
+        args.output = new_output(args.output)
         if args.output.exists():
             parser.error(f"Output already exists: {args.output}")
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -266,15 +273,7 @@ def main(argv=None):
         print(
             "Loss of power/control or idle may let the arm fall; software is not an emergency stop."
         )
-        try:
-            if (
-                input("Type DRAG to allow gravity compensation (anything else cancels): ").strip()
-                != "DRAG"
-            ):
-                print("Cancelled without connecting.")
-                return 0
-        except (EOFError, KeyboardInterrupt):
-            return 130
+        print("--execute authorizes entry into gravity compensation after device checks.")
     client = None
     try:
         client = open_client(args.host, args.port)

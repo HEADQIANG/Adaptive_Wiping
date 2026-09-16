@@ -138,17 +138,24 @@ def interactive(folder, *, read=input, recorder=capture):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--directory", type=Path, default=ROOT / "runs/force_sensor/unloaded_calibration"
+        "--directory", type=Path
     )
     parser.add_argument(
         "--status", action="store_true", help="Read saved files only; never connect to devices"
     )
     args = parser.parse_args(argv)
+    directory_supplied = args.directory is not None
+    args.directory = args.directory or ROOT / "runs/force_sensor/unloaded_calibration"
     if args.status:
         show_status(args.directory)
         return 0
     if not sys.stdin.isatty():
         parser.error("Recording requires an attended interactive terminal")
+    from scripts.shared.run_paths import new_output
+
+    args.directory = new_output(
+        args.directory, resume=directory_supplied and (args.directory / ".session.lock").is_file()
+    )
     args.directory.mkdir(parents=True, exist_ok=True)
     with (args.directory / ".session.lock").open("a") as lock:
         try:

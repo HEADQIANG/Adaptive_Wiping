@@ -215,7 +215,9 @@ def main():
         == rr["script_sha256"]
     )
     assert all(file_digest(ROOT / path) == sha for path, sha in cr["sources"].items())
-    out = robot / "analysis"
+    from scripts.shared.run_paths import new_output
+
+    out = new_output(robot / "analysis")
     out.mkdir(exist_ok=False)
     assays, wrenches = assay_summary(rig, rr)
     rows, traces = robot_summary(robot, cr)

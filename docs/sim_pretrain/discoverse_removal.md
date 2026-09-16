@@ -50,8 +50,8 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 MUJOCO_GL=egl \
 新增隔离测试禁止导入 DISCOVERSE，以及读取原目录或归档源码；模型校验、当前来源记录、仿真初始化与步进仍通过。
 旧路径读取、写入拒绝和 AIRBOT/UR5e 模型校验通过。当前文档本地链接检查无失效项。
 
-[完整回归日志](../../runs/sim_pretrain/discoverse_removed_smoke_001/regression.log) 和
-[移除后的仿真闭环报告](../../runs/sim_pretrain/discoverse_removed_smoke_001/smoke_report.json) 已保存。
+[完整回归日志](../../runs/sim_training/discoverse_removed_smoke_001/regression.log) 和
+[移除后的仿真闭环报告](../../runs/sim_training/discoverse_removed_smoke_001/smoke_report.json) 已保存。
 仿真采集、训练、导出与加载通过，测试 MSE `0.39734765887260437` 与移除前一致。
 该小规模测试使用研究 record-only 接触策略，只验证软件流程，不证明接触质量或模型部署有效性。
 本次没有连接或驱动真机。

@@ -325,7 +325,9 @@ def plot(output, sim, real, initial, absolute, relative, arc):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default="runs/real_training/real_input_alignment_audit_v1")
-    result = run(parser.parse_args().output)
+    from scripts.shared.run_paths import new_output
+
+    result = run(new_output(parser.parse_args().output))
     print(
         json.dumps(
             {"force": result["force"], "xy": result["xy"], "inputs_unchanged": True}, indent=2

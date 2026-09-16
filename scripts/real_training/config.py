@@ -18,6 +18,10 @@ def native_profile(cfg):
     return cfg["profile"] in ("airbot_native_offline", "airbot_native_tared_offline")
 
 
+def sdk_position_profile(cfg):
+    return native_profile(cfg) or cfg["profile"] == "airbot_sensor_calibrated_offline"
+
+
 def load_config(path):
     with read_path(path).open(encoding="utf-8") as stream:
         cfg = yaml.safe_load(stream)
@@ -43,7 +47,7 @@ def validate_config(cfg, *, testing=False):
     if out in (ROOT.resolve(), Path("/")):
         raise ValueError("Use a dedicated output subdirectory")
     if cfg["profile"] not in (
-        ("synthetic_test",) if testing else ("paper_downstream", "airbot_native_offline", "airbot_native_tared_offline")
+        ("synthetic_test",) if testing else ("paper_downstream", "airbot_native_offline", "airbot_native_tared_offline", "airbot_sensor_calibrated_offline")
     ):
         raise ValueError("Unknown real training profile; synthetic tests are separate")
     p = cfg["processing"]

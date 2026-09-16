@@ -195,6 +195,9 @@ if __name__ == "__main__":
     parser.add_argument("--deployment-config", default="configs/real_deploy/airbot_deployment.json")
     parser.add_argument("--output", default="runs/real_training/report")
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     print(
         json.dumps(
             summarize(

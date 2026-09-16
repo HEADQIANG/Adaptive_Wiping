@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "mode": "manual-start",
+  "robot_sn": "PZ60C02603000943",
+  "expected_eef_type": "NULL",
+  "sponge_id": "normal",
+  "exploration_id": "normal_exp",
+  "sdk_frame_and_tool_note": "KWR75A and sponge, NULL end effector; SDK +Z table normal, +Y slide. Confirm unchanged installation, 1 mm non-contact gap and clear full swept path before h. No project joint-position limits, XYZ envelope, measured compression stop, stationary acceptance or force/torque limit stop. SDK/firmware limits are not modified. SDK end is not a calibrated sponge TCP.",
+  "table_normal_sdk": [0.0, 0.0, 1.0],
+  "slide_direction_sdk": [0.0, 1.0, 0.0],
+  "initial_gap_m": 0.001,
+  "verified_compression_allowance_m": 0.019,
+  "joint_speed_limit_rad_s": 0.4,
+  "measured_joint_speed_stop_rad_s": 1.2,
+  "joint_current_limits": [8.0, 8.0, 8.0, 8.0, 8.0, 8.0],
+  "eef_current_limit": null,
+  "sensor_port": "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AG0KL3D4-if00-port0",
+  "sensor_bias_si": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+}

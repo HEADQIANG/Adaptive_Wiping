@@ -92,7 +92,7 @@ beyond200 epochs was started. Do not overwrite this completed output directory.
 The 2026-09-09 request authorizes fresh collection and training with the friction
 randomization changed from[0,3.5] to[0,1.2]. This run follows the current normal
 AIRBOT Play mode (IK + goal-velocity feedforward, gain300). It does not collect
-or train impedance mode and does not overwrite the previous runs/sim_pretrain/model.
+or train impedance mode and does not overwrite the previous runs/sim_training/model.
 
 `configs/sim_pretrain/pretrain_paper_mu1p2.yaml` differs from `configs/sim_pretrain/pretrain_paper.yaml`
 only in friction bounds and output location. Stiffness_direct=[.5,1000],
@@ -131,7 +131,7 @@ conda activate clean
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.collect_control_comparison \
   --config configs/sim_pretrain/pretrain_paper_mu1p2.yaml \
-  --output runs/sim_pretrain/normal_mu1p2_pretraining_v1 \
+  --output runs/sim_training/normal_mu1p2_pretraining_v1 \
   --mode normal --record-only-contact-gate
 ```
 
@@ -160,12 +160,12 @@ exact equality of every recorded field and unloaded wrench:
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.collect_normal_parallel \
   --config configs/sim_pretrain/pretrain_paper_mu1p2.yaml \
-  --output runs/sim_pretrain/normal_mu1p2_pretraining_v1 \
+  --output runs/sim_training/normal_mu1p2_pretraining_v1 \
   --workers 6 --record-only-contact-gate --verify-pilot 10
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.collect_normal_parallel \
   --config configs/sim_pretrain/pretrain_paper_mu1p2.yaml \
-  --output runs/sim_pretrain/normal_mu1p2_pretraining_v1 \
+  --output runs/sim_training/normal_mu1p2_pretraining_v1 \
   --workers 6 --record-only-contact-gate
 ```
 
@@ -198,7 +198,7 @@ sys.path.insert(0, "scripts")
 from collect_control_comparison import verify
 from scripts.shared.common import write_json
 
-out = Path("runs/sim_pretrain/normal_mu1p2_pretraining_v1")
+out = Path("runs/sim_training/normal_mu1p2_pretraining_v1")
 manifest = json.loads((out / "manifest.json").read_text())
 cfg = json.loads((out / "normal/config.json").read_text())
 result = verify(out, manifest, {"normal": cfg})
@@ -214,7 +214,7 @@ Do not use the paired `summarize_control_data.py` CLI on this single-mode run.
 Its `split_statistics` function can summarize each completed normal HDF5 split.
 The range-change audit should verify only the two intended config differences,
 identical stiffness/width assignments,1200 unique assignments across splits,
-unchanged frozen sources and original runs/sim_pretrain/model hashes before training.
+unchanged frozen sources and original runs/sim_training/model hashes before training.
 
 ## Train, Evaluate And Export
 
@@ -225,15 +225,15 @@ original VAE and refuses to retrain where `vae_last.pt` already exists.
 
 ```bash
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-flock --nonblock runs/sim_pretrain/normal_mu1p2_pretraining_v1/normal/.training.lock \
+flock --nonblock runs/sim_training/normal_mu1p2_pretraining_v1/normal/.training.lock \
 python -m scripts.sim_pretrain train \
-  --config runs/sim_pretrain/normal_mu1p2_pretraining_v1/normal/config.json
+  --config runs/sim_training/normal_mu1p2_pretraining_v1/normal/config.json
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain evaluate \
-  --config runs/sim_pretrain/normal_mu1p2_pretraining_v1/normal/config.json
+  --config runs/sim_training/normal_mu1p2_pretraining_v1/normal/config.json
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain export \
-  --config runs/sim_pretrain/normal_mu1p2_pretraining_v1/normal/config.json
+  --config runs/sim_training/normal_mu1p2_pretraining_v1/normal/config.json
 ```
 
 The original trainer saves best-validation-loss and epoch200 checkpoints;
@@ -255,7 +255,7 @@ import torch
 from scripts.sim_pretrain.learning import FrozenSpongeEncoder
 
 torch.set_num_threads(1)
-folder = Path("runs/sim_pretrain/normal_mu1p2_pretraining_v1/normal")
+folder = Path("runs/sim_training/normal_mu1p2_pretraining_v1/normal")
 encoder = FrozenSpongeEncoder(folder / "encoder.pt")
 with h5py.File(folder / "dataset.h5", "r") as h5:
     raw = h5["test/ft"][:]
@@ -274,11 +274,11 @@ PY
 ```bash
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.plot_training_ft \
-  --dataset-config runs/sim_pretrain/normal_mu1p2_pretraining_v1/normal/config.json \
-  --indices 0 83 --output runs/sim_pretrain/normal_mu1p2_ft_visualization_v1
-xdg-open runs/sim_pretrain/normal_mu1p2_pretraining_v1/normal/training.png
-xdg-open runs/sim_pretrain/normal_mu1p2_pretraining_v1/normal/reconstruction.png
-xdg-open runs/sim_pretrain/normal_mu1p2_ft_visualization_v1/training_overview.png
+  --dataset-config runs/sim_training/normal_mu1p2_pretraining_v1/normal/config.json \
+  --indices 0 83 --output runs/sim_data/normal_mu1p2_ft_visualization_v1
+xdg-open runs/sim_training/normal_mu1p2_pretraining_v1/normal/training.png
+xdg-open runs/sim_training/normal_mu1p2_pretraining_v1/normal/reconstruction.png
+xdg-open runs/sim_data/normal_mu1p2_ft_visualization_v1/training_overview.png
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m unittest discover -s tests -q
 ```

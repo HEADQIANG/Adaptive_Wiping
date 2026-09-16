@@ -15,7 +15,6 @@ from scripts.robot_control.__main__ import (
     interact,
     main,
     save_pose,
-    to_sdk_pose,
 )
 from scripts.robot_control.client import StateError
 from scripts.robot_control.motion import (
@@ -203,8 +202,8 @@ class BasicControlTests(unittest.TestCase):
                 self.session.switch("servo")
         self.assertNotIn("joint", self.robot.calls)
 
-    def test_console_requires_confirmation_and_disables_jog_after_drag(self):
-        keys = iter(["k", "n", "k", "Y", "g", "Y", "x", "q", "Y"])
+    def test_console_switches_directly_and_disables_jog_after_drag(self):
+        keys = iter(["k", "g", "x", "h", "q", "Y"])
         with (
             patch("scripts.robot_control.__main__.terminal", return_value=nullcontext()),
             patch(
@@ -214,37 +213,64 @@ class BasicControlTests(unittest.TestCase):
             redirect_stdout(io.StringIO()),
         ):
             interact(self.session)
-        self.assertEqual(self.robot.calls.count("servo"), 1)
+        self.assertEqual(self.robot.calls.count("servo"), 2)
         self.assertEqual(self.robot.calls.count("gravity_comp"), 1)
         self.assertNotIn("pose", self.robot.calls)
         self.assertEqual(self.robot.mode, "idle")
 
-    def test_tcp_target_roundtrip(self):
-        from types import SimpleNamespace
+    def test_console_idle_and_quit_still_require_support_confirmation(self):
+        keys = iter(["h", "i", "n", "q", "n", "i", "Y", "q", "Y"])
+        with (
+            patch("scripts.robot_control.__main__.terminal", return_value=nullcontext()),
+            patch("scripts.robot_control.__main__.key_available", side_effect=lambda *a: next(keys)),
+            patch.object(self.session, "finish", wraps=self.session.finish) as finish,
+            redirect_stdout(io.StringIO()),
+        ):
+            interact(self.session)
+        self.assertEqual(finish.call_count, 2)
+        for call in finish.call_args_list:
+            self.assertEqual(call.kwargs, {"supported": True})
 
-        from scipy.spatial.transform import Rotation
+    def test_idle_cli_requires_support_before_connecting(self):
+        from scripts.robot_control.motion import FLAGS
 
-        from scripts.shared.airbot_calibration import Frames
+        cfg = fake_config()
+        cfg.update(source_kind="real", **{key: True for key in FLAGS})
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / "config.json"
+            config.write_text(json.dumps(cfg))
+            with (
+                patch("scripts.robot_control.client.open_client") as connect,
+                patch("sys.stdin.isatty", return_value=True),
+                patch("builtins.input", return_value="no") as prompt,
+                redirect_stdout(io.StringIO()),
+            ):
+                self.assertEqual(main(["idle", "--execute", "--config", str(config),
+                                       "--log", directory + "/events.jsonl"]), 0)
+            connect.assert_not_called()
+            self.assertIn("IDLE", prompt.call_args.args[0])
 
-        base = np.eye(4)
-        base[:3, :3] = Rotation.from_euler("z", 0.4).as_matrix()
-        base[:3, 3] = [0.1, 0.2, 0.3]
-        tcp = np.eye(4)
-        tcp[:3, 3] = [0.01, 0, 0.02]
-        tcp[:3, :3] = Rotation.from_euler("x", 0.2).as_matrix()
-        frames = Frames(
-            dict(
-                base_from_sdk=base,
-                end_from_tcp=tcp,
-                sensor_to_ft_frame=np.eye(4),
-                sensor_bias_si=[0] * 6,
-            )
-        )
-        q = Rotation.from_euler("y", 0.3).as_quat()
-        position, orientation = to_sdk_pose([0.2, 0.3, 0.4], q, SimpleNamespace(frames=frames))
-        state = dict(sdk_end_position_m=position, sdk_end_orientation_xyzw=orientation)
-        np.testing.assert_allclose(frames.to_tcp(state), [0.2, 0.3, 0.4], atol=1e-12)
-        np.testing.assert_allclose(frames.tcp_quaternion(orientation), q, atol=1e-12)
+    def test_space_stops_during_support_confirmation(self):
+        keys = iter(["h", "q", " "])
+        with (
+            patch("scripts.robot_control.__main__.terminal", return_value=nullcontext()),
+            patch("scripts.robot_control.__main__.key_available", side_effect=lambda *a: next(keys)),
+            patch.object(self.session, "finish") as finish,
+            redirect_stdout(io.StringIO()),
+        ):
+            interact(self.session)
+        finish.assert_not_called()
+        self.assertIn("stop", self.robot.calls)
+
+    def test_removed_tcp_options_are_rejected_before_hardware_connection(self):
+        for removed in (["--frame", "tcp"], ["--calibration", "old.json"]):
+            with self.subTest(removed=removed), \
+                    patch("scripts.robot_control.client.open_client") as client, \
+                    redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+                main(["move-pose", "--execute", "--position", "0.2", "0.3", "0.4",
+                      "--quaternion", "0", "0", "0", "1", *removed])
+            self.assertEqual(error.exception.code, 2)
+            client.assert_not_called()
 
     def test_cli_eof_interrupt_and_partial_mode_failure_request_stop(self):
         from scripts.robot_control.motion import FLAGS
@@ -264,7 +290,7 @@ class BasicControlTests(unittest.TestCase):
                     ),
                     patch("scripts.robot_control.__main__.interact", side_effect=failure),
                     patch("sys.stdin.isatty", return_value=True),
-                    patch("builtins.input", return_value="CONTROL"),
+                    patch("builtins.input", side_effect=AssertionError("Unexpected startup prompt")) as prompt,
                     redirect_stdout(io.StringIO()),
                     redirect_stderr(io.StringIO()),
                 ):
@@ -279,6 +305,7 @@ class BasicControlTests(unittest.TestCase):
                         ]
                     )
                 self.assertIn(code, (2, 130))
+                prompt.assert_not_called()
                 self.assertIn("stop", robot.calls)
                 self.assertNotIn("idle", robot.calls)
                 client.close.assert_called_once()

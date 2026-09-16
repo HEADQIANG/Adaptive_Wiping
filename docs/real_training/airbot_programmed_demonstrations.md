@@ -1,5 +1,14 @@
 # AIRBOT 程序示教采集
 
+2026-09-15 输出规则更新：新结果自动增加 `MMDD_HHMMSS` 时间目录（如 `0915_142205`）。
+后续关联、状态查询及续跑使用终端打印的实际路径；多阶段训练使用打印的 `run_config.yaml`。
+下文未带时间层的历史路径示例不代表新文件的实际路径，完整新命令见 [runs 输出操作步骤](../run_outputs.md)。
+
+2026-09-15：若配合新的 manual-start 探索，请使用
+`configs/real_training/airbot_programmed_manual_demonstrations.json` 和全新会话目录，
+按 [手动起点探索与训练](manual_start_exploration.md) 在采集前冻结探索日志关联。
+程序示教自身的起点、静止、载荷和最终回位保护没有取消。
+
 当前为独立的 `airbot_programmed_fixed_depth_v2` 协议：与探索一样，位置目标只由时间和指定深度决定，
 六维力用于记录及探索已有的超限停止，**不进行恒力或高度反馈控制**。
 只采集、审核和续采，不修改人工示教、探索或训练模型。
@@ -19,7 +28,7 @@
 ### 启动自动到位
 
 操作者已确认允许直达移动，配置 `startup_approach.mode=direct`。每次运行（包括续采）在
-`PROGRAMMED` 确认后，先检查当前姿态静止和原始载荷，进入 servo 并保持实测当前位置，
+带 `--execute` 的命令启动后，不等待口令，先检查当前姿态静止和原始载荷，进入 servo 并保持实测当前位置，
 再从当前位置直线移动到探索起点，同时用最短旋转姿态插值。无需手动精确调到起点。
 采用五次平滑时间曲线，峰值平移速度 `speed_m_s=0.01`（10 mm/s）、峰值角速度
 `angular_speed_rad_s=0.1`，不是擦拭横移速度；擦拭仍为 0.05 m/s。
@@ -35,7 +44,7 @@ CSV 和 JSON 写入必须在该轮计划开始后的 10 ms 内完成。超过周
 到位后仍须通过原有位置、姿态、关节和静止检查；逆解分支不一致时停止，不自动换分支修正。
 到位完成不启动示教，清除提前输入，等待新的 `s`；空载基线仅在到位后逐条采集。
 
-**直达不是避障规划。** 每次确认 `PROGRAMMED` 前，必须核实当前工具、机械臂各连杆到目标的
+**直达不是避障规划。** 每次执行带 `--execute` 的命令前，必须核实当前工具、机械臂各连杆到目标的
 整个运动空间无障碍，不只核实末端直线。当前位置变化时须重新检查；有接触、障碍或路径不明时不要启动。
 `direct_path_confirmed=true` 只记录操作者本次对直达方式的确认，不代表软件验证了碰撞安全。
 更换现场布局应撤销确认并重新核实。程序不会自动启动机器人服务或清除急停。
@@ -133,10 +142,10 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training d
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training demonstrate run --mode programmed \
   --config configs/real_training/airbot_programmed_demonstrations.json \
-  --output runs/real_training/programmed_demonstrations/direct_start_session_004 --execute
+  --output runs/real_demonstrations/programmed/direct_start_session_004 --execute
 ```
 
-1. 核实从当前位置直达起点的完整路径、非接触目标起点、擦拭路径及人员防护。机械臂停稳后输入 `PROGRAMMED` 并回车，才连接设备并自动到位；此后可能立即运动。
+1. 核实从当前位置直达起点的完整路径、非接触目标起点、擦拭路径及人员防护。机械臂停稳后执行带 `--execute` 的命令，不再等待口令；检查通过即连接设备并自动到位，可能立即运动。
 2. 自动到位并实测停稳后，看到等待提示再输入 `s` 并回车，表示确认非接触起点，开始本条静止检查和空载基线采集。到位运动期间提前输入的 `s` 作废。
 3. 程序下压、固定深度横移、回撤；此时不要触碰机器人，不要提前输入下一步命令。
 4. 实测回位停稳后查看报告。输入 `a` 并回车仅表示人工接受，其他输入拒绝重采，`q` 结束采集。
@@ -164,7 +173,7 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training d
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training demonstrate status --mode programmed \
-  --output runs/real_training/programmed_demonstrations/direct_start_session_004
+  --output runs/real_demonstrations/programmed/direct_start_session_004
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m unittest tests.real_training.test_airbot_programmed_demonstrations -v
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m unittest \
   tests.real_training.test_airbot_programmed_demonstrations \

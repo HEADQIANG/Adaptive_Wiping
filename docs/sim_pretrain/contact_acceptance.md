@@ -69,7 +69,7 @@ From the project root, with the verified `clean` environment:
 ```bash
 conda activate clean
 python -m unittest discover -s tests -t . -p 'test_*.py' -v
-python -m scripts.sim_pretrain.experiments.validate_contact_reference --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_pretrain/contact_reference_v2
+python -m scripts.sim_pretrain.experiments.validate_contact_reference --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_data/contact_reference_v2
 ```
 
 Use `/home/wp/miniconda3/envs/clean/bin/python` if activation is unavailable.
@@ -95,7 +95,7 @@ directory and preserve the effective config (this runs the full 27-point scan,
 not the nominal-reference candidate):
 
 ```bash
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -c 'import os; from pathlib import Path; from scripts.shared.common import load_config, write_json; from scripts.sim_pretrain.collection import sanity; cfg=load_config("configs/sim_pretrain/pretrain_paper.yaml"); cfg["output_dir"]="runs/sim_pretrain/contact_acceptance_sanity_repeat"; out=Path(cfg["output_dir"]); out.mkdir(exist_ok=False); write_json(out / "config.json", cfg); write_json(out / "runtime.json", {k:os.environ[k] for k in ("OPENBLAS_NUM_THREADS","OMP_NUM_THREADS","MKL_NUM_THREADS")}); report=sanity(cfg); raise SystemExit(0 if report["passed"] else 2)'
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -c 'import os; from pathlib import Path; from scripts.shared.common import load_config, write_json; from scripts.sim_pretrain.collection import sanity; cfg=load_config("configs/sim_pretrain/pretrain_paper.yaml"); cfg["output_dir"]="runs/sim_data/contact_acceptance_sanity_repeat"; out=Path(cfg["output_dir"]); out.mkdir(exist_ok=False); write_json(out / "config.json", cfg); write_json(out / "runtime.json", {k:os.environ[k] for k in ("OPENBLAS_NUM_THREADS","OMP_NUM_THREADS","MKL_NUM_THREADS")}); report=sanity(cfg); raise SystemExit(0 if report["passed"] else 2)'
 ```
 
 Exit 2 is the expected failed physical acceptance, not a dependency failure.
@@ -155,7 +155,7 @@ This is evidence against reference decoupling alone being sufficient, not proof
 that a specific replacement controller or gain will work.
 
 The three actual/FF position and raw-FT trajectories match the previous
-uninstrumented `runs/sim_pretrain/contact_diagnosis/*_baseline.npz` exactly (maximum
+uninstrumented `runs/sim_data/contact_diagnosis/*_baseline.npz` exactly (maximum
 difference zero). The v2 production provenance was unchanged throughout the
 experiment. The comparison figure was visually checked. All 25 tests passed,
 including nominal independence/guards, acceptance boundaries, and end-to-end

@@ -4,12 +4,11 @@ import argparse
 import copy
 import json
 import time
-from datetime import datetime
 
 import numpy as np
 
 from scripts.shared.common import load_config
-from scripts.shared.paths import ROOT, writable_path
+from scripts.shared.paths import ROOT
 from scripts.sim_pretrain.simulation import (
     PretrainingWipe, rollout_metrics, FT_OUTPUT_FRAME, FT_OUTPUT_SIGNS, FT_PROCESSING,
 )
@@ -117,7 +116,9 @@ def main(argv=None):
             parser.error("--ramp-s must be finite and in [0, 0.5]")
         cfg["simulation"]["exploration_ramp_s"] = args.ramp_s
     ramp_s = cfg["simulation"].get("exploration_ramp_s", 0.0)
-    output = writable_path(args.output or ("runs/sim_pretrain/explore_once_" + datetime.now().strftime("%Y%m%d_%H%M%S_%f")))
+    from scripts.shared.run_paths import new_output
+
+    output = new_output(args.output or "runs/sim_data/explore_once")
     if output.exists():
         parser.error("Output directory already exists; choose a new directory")
     plot = None

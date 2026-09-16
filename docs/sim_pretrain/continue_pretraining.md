@@ -82,7 +82,7 @@ conda activate clean
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.continue_pretraining \
   --dataset-config archive/sim_pretrain/normal_mu1p2_pretraining_v1/normal/config.json \
-  --additional-epochs 200 --output runs/sim_pretrain/normal_mu1p2_continue400_v1
+  --additional-epochs 200 --output runs/sim_training/normal_mu1p2_continue400_v1
 ```
 
 The output must be new and cannot overlap either source dataset or checkpoint
@@ -118,9 +118,9 @@ diagnostics, not paper-reported criteria. Reusing an already inspected test set
 does not create a new untouched benchmark.
 
 ```bash
-xdg-open runs/sim_pretrain/normal_mu1p2_continue400_v1/reconstruction_comparison.png
-xdg-open runs/sim_pretrain/normal_mu1p2_continue400_v1/training.png
-xdg-open runs/sim_pretrain/normal_mu1p2_continue400_v1/latent_diagnostics.png
+xdg-open runs/sim_training/normal_mu1p2_continue400_v1/reconstruction_comparison.png
+xdg-open runs/sim_training/normal_mu1p2_continue400_v1/training.png
+xdg-open runs/sim_training/normal_mu1p2_continue400_v1/latent_diagnostics.png
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m unittest discover -s tests -t . -p 'test_continue_pretraining.py' -v
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
@@ -156,12 +156,12 @@ reported separately. This does not change training, weights or predictions.
 If training reached its final epoch and only the already-written export check
 failed, the following command verifies existing artifacts without retraining,
 rewriting weights or regenerating plots. It refuses unfinished training or an
-already-completed run. Source/runs/sim_pretrain/history/checkpoint provenance must match.
+already-completed run. Source/runs/sim_training/history/checkpoint provenance must match.
 
 ```bash
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.continue_pretraining --verify-export-only \
-  --output runs/sim_pretrain/normal_mu1p2_continue400_v1
+  --output runs/sim_training/normal_mu1p2_continue400_v1
 ```
 
 `postprocessing_recovery.json` preserves the previous failure, training versus

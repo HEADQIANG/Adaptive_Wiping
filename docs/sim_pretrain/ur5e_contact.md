@@ -44,7 +44,7 @@ From the project root:
 
 ```bash
 conda activate clean
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.test_ur5e_contact --output runs/sim_pretrain/ur5e_contact_v1
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.test_ur5e_contact --output runs/sim_training/ur5e_contact_v1
 python -m unittest discover -s tests -t . -p 'test_ur5e_comparison.py' -v
 ```
 
@@ -70,7 +70,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path("scripts").resolve()))
 from test_ur5e_contact import comparison_config, run_case, experiment_sources
 from scripts.shared.common import load_config, write_json, provenance
-out = Path("runs/sim_pretrain/ur5e_matched_gain300_repeat")
+out = Path("runs/sim_training/ur5e_matched_gain300_repeat")
 out.mkdir(exist_ok=False)
 cfg = comparison_config(load_config("configs/sim_pretrain/pretrain_paper.yaml"), "ik_ff")
 cfg["output_dir"] = str(out)
@@ -91,7 +91,7 @@ write_json(out / "report.json", report)
 After both experiments finish, plot the three representative contacts:
 
 ```bash
-python -m scripts.sim_pretrain.experiments.plot_ur5e_contact --ur runs/sim_pretrain/ur5e_contact_v1 --matched archive/sim_pretrain/ur5e_matched_gain300_v1 --output runs/sim_pretrain/ur5e_contact_comparison.png
+python -m scripts.sim_pretrain.experiments.plot_ur5e_contact --ur runs/sim_training/ur5e_contact_v1 --matched archive/sim_pretrain/ur5e_matched_gain300_v1 --output runs/sim_training/ur5e_contact_comparison.png
 ```
 
 The graph compares motion, not identical installations; labels include each

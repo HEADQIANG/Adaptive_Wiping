@@ -41,6 +41,26 @@ class FixedLoopTests(unittest.TestCase):
                      "sdk_end_orientation_xyzw": [0, 0, 0, 1], "joint_position_rad": [0] * 6}
         self.policy = FakePolicy(self.pose)
 
+    def test_run_and_shadow_reach_connection_without_consuming_start_key(self):
+        self.policy.warnings = []
+        loaded = ({}, {}, self.pose, self.policy, np.zeros((1, 5)), {}, {}, {})
+        for action in ("run", "shadow"):
+            with (
+                self.subTest(action=action),
+                tempfile.TemporaryDirectory() as folder,
+                patch.object(fixed, "load_setup", return_value=loaded),
+                patch.object(fixed, "run_blockers", return_value=[]),
+                patch.object(fixed, "assert_unchanged"),
+                patch.object(fixed.sys.stdin, "isatty", return_value=True),
+                patch.object(program.Terminal, "ask", side_effect=AssertionError("Unexpected startup prompt")) as prompt,
+                patch.object(fixed, "open_client", side_effect=RuntimeError("Test connection boundary")) as connect,
+                redirect_stderr(io.StringIO()) as errors,
+            ):
+                self.assertEqual(main([action, "--mode", "fixed-setup", "--execute",
+                                       "--output", str(Path(folder) / "events.jsonl")]), 2)
+                self.assertEqual(connect.call_count, 1, errors.getvalue())
+                prompt.assert_not_called()
+
     def test_bootstrap_once_in_original_timeline(self):
         loop = fixed.FixedSetupLoop(self.policy, np.zeros((1, 5)), self.pose["sdk_end_position_m"])
         measured = list(self.pose["sdk_end_position_m"])
@@ -297,13 +317,28 @@ class FixedBindingTests(unittest.TestCase):
             self.skipTest("Reviewed fixed-setup policy fixture not installed")
 
     def test_exact_policy_inputs_load_but_unconfirmed_run_cannot_connect(self):
-        loaded = fixed.load_setup(self.path)
+        # Historical policy sources predate current code. Isolate the confirmation
+        # gate here; changed-source rejection is exercised separately below.
+        with patch.object(fixed, "assert_unchanged") as source_check:
+            loaded = fixed.load_setup(self.path)
+        source_check.assert_called_once()
         self.assertEqual(loaded[0]["scope"], fixed.SCOPE)
         self.assertEqual(loaded[1]["tracking_error_policy"], "record-only")
         self.assertEqual(loaded[1]["orientation_error_policy"], "record-only")
         unconfirmed = {**loaded[0], "motion_limits_confirmed": False}
         self.assertTrue(fixed.run_blockers(unconfirmed, loaded[-1]))
         with patch.object(fixed, "load_setup", return_value=(unconfirmed, *loaded[1:])), \
+                patch.object(fixed, "open_client") as client, redirect_stderr(io.StringIO()):
+            self.assertEqual(main(["run", "--mode", "fixed-setup", "--execute"]), 2)
+        client.assert_not_called()
+
+    def test_changed_source_provenance_still_prevents_connection(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "source.py"
+            source.write_text("# changed source\n")
+            with self.assertRaisesRegex(ValueError, "inputs changed"):
+                fixed.assert_unchanged({str(source): "0" * 64})
+        with patch.object(fixed, "assert_unchanged", side_effect=ValueError("inputs changed")), \
                 patch.object(fixed, "open_client") as client, redirect_stderr(io.StringIO()):
             self.assertEqual(main(["run", "--mode", "fixed-setup", "--execute"]), 2)
         client.assert_not_called()

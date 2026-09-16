@@ -192,4 +192,7 @@ if __name__ == "__main__":
         "--output", type=Path, default=Path("runs/force_sensor/unloaded_calibration_fit_v1.json")
     )
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     print(json.dumps(run(args.directory, args.output), indent=2))

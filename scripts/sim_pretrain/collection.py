@@ -15,6 +15,7 @@ from scripts.shared.common import (
     write_json,
 )
 from scripts.shared.paths import writable_path
+from scripts.shared.run_layout import sim_data_path
 from scripts.sim_pretrain.acceptance import contact_motion_acceptance
 
 
@@ -35,7 +36,7 @@ def sanity(cfg):
     )
 
     out = output_dir(cfg)
-    traces = out / "sanity_traces"
+    traces = sim_data_path(out, "sanity_traces")
     traces.mkdir(parents=True, exist_ok=True)
     report = {
         "passed": False,
@@ -46,7 +47,7 @@ def sanity(cfg):
         "grid": [],
         "scope": "simulation only; contact-parameter reproduction, not calibrated material stiffness",
     }
-    path = out / "sanity.json"
+    path = sim_data_path(out, "sanity.json")
     write_json(path, report)
     for gain in cfg["simulation"]["gain_candidates"]:
         env = None
@@ -173,7 +174,7 @@ def collect(cfg, retry_failed=False):
     out = output_dir(cfg)
     proof = {"config": cfg, "sanity": report}
     proof_hash = digest(proof)
-    with h5py.File(out / "dataset.h5", "a") as h5:
+    with h5py.File(sim_data_path(out, "dataset.h5"), "a") as h5:
         if "config_hash" not in h5.attrs:
             h5.attrs.update(
                 config_hash=digest(cfg),
@@ -274,7 +275,7 @@ def collect(cfg, retry_failed=False):
             "failed_or_pending": len(failures),
             "valid_counts": {split: int(h5[split]["valid"][:].sum()) for split in cfg["dataset"]},
         }
-        write_json(out / "collection.json", result)
+        write_json(sim_data_path(out, "collection.json"), result)
     if result["complete"]:
-        write_json(out / "dataset_integrity.json", {"sha256": file_digest(out / "dataset.h5")})
+        write_json(sim_data_path(out, "dataset_integrity.json"), {"sha256": file_digest(out / "dataset.h5")})
     return result

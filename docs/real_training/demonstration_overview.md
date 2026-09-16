@@ -18,7 +18,7 @@ Default output: `archive/real_training/real_robot/demonstration_overview_002`:
 To select another session or destination:
 
 ```bash
-python3 -m scripts.real_training.tools.plot_demonstration_overview --session archive/real_training/raw_data/manual_demonstrations/session_record_only_002 --output runs/real_training/real_robot/demonstration_overview_custom
+python3 -m scripts.real_training.tools.plot_demonstration_overview --session archive/real_training/raw_data/manual_demonstrations/session_record_only_002 --output runs/real_exploration/demonstration_overview_custom
 ```
 
 Existing generated files at the destination are replaced. Source files are

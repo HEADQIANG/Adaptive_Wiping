@@ -24,7 +24,7 @@ mu 均匀，其余三项对数均匀；每条动作参数恒定，seed 和所有
 
 ### 128 组随机覆盖诊断结果
 
-报告目录：`runs/sim_pretrain/match_real_003_20260912_210833_064866/`。
+报告目录：`runs/sim_data/match_real_003_20260912_210833_064866/`。
 128 组全部完成，119 组全程未限幅，9 组出现至少一帧限幅；
 只有其中 3 组超过原验收的 1% 限幅比例门槛，不将两种统计混淆。
 运动验收通过数为 0：全部未通过返回位移、Y 跟踪误差和姿态误差检查，
@@ -89,9 +89,9 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 默认搜索 54 组，3 个独立仿真进程，每组全新环境。
 可通过 `--gains`、`--mu`、`--stiffness`、`--width` 指定候选列表，
 `--workers` 设置 1-4 个进程，`--output` 指定未存在的新目录。
-默认输出为 `runs/sim_pretrain/match_real_003_<时间戳>/`。
+默认输出为 `runs/sim_data/match_real_003_<时间戳>/`。
 
-真实参考为 `runs/real_training/real_robot/exploration_tared_plot_003.jsonl`，
+真实参考为 `runs/real_exploration/exploration_tared_plot_003.jsonl`，
 它是用户指定 PNG 的来源，复用同样的传感器接收时间戳去重及清零字段。
 该日志有 400 个控制采样、227 个独立接收时间戳；重复读到同一传感器样本不当作新测量。
 9.81 单位换算视为已确认正确，不再乘除缩放。
@@ -121,11 +121,11 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 
 第一轮 54 组：gain=[300,1000]，mu=[0.5,0.8,1.2]，
 k=[100.25,500.25,1000]，width=[0.001,0.01,0.1]。
-报告：`runs/sim_pretrain/match_real_003_20260912_203845_753581/report.json`。
+报告：`runs/sim_data/match_real_003_20260912_203845_753581/report.json`。
 
 第二轮 36 组：gain=1000，mu=[0.2,0.4,0.6,0.8]，
 k=[1000,5000,20000]，width=[0.0002,0.002,0.02]。
-报告：`runs/sim_pretrain/match_real_003_20260912_204102_008664/report.json`。
+报告：`runs/sim_data/match_real_003_20260912_204102_008664/report.json`。
 第二轮包含默认材料随机化范围之外的诊断参数，不自动扩大训练范围。
 复现命令：
 
@@ -191,7 +191,7 @@ gain=300 的第一轮按压末段绝对 Fz 仅 1.34-1.72 N；gain=1000 为 2.30-
 
 第三轮 54 组：gain=[2000,5000,10000]，mu=[0.4,0.7,1.0]，
 k=[500,2000,10000]，width=[0.001,0.02]；复现命令见文档开头。
-报告：`runs/sim_pretrain/match_real_003_20260912_205133_293165/report.json`。
+报告：`runs/sim_data/match_real_003_20260912_205133_293165/report.json`。
 最佳为 case_025：gain=5000、mu=0.7、k=500、width=0.02，评分 0.348530。
 
 第四轮细化 81 组，复现命令：
@@ -202,7 +202,7 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
   --gains 2500 3500 5000 --mu 0.4 0.55 0.7 --stiffness 100 250 500 --width 0.02 0.05 0.1
 ```
 
-报告：`runs/sim_pretrain/match_real_003_20260912_205517_019947/report.json`。
+报告：`runs/sim_data/match_real_003_20260912_205517_019947/report.json`。
 该目录 `comparison.png` 为综合评分前三名，`selected_comparison.png` 为下列两类候选。
 
 ### 法向力优先的候选

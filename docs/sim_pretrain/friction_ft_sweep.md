@@ -24,7 +24,7 @@ MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.friction_ft_sweep \
   --dataset-config archive/sim_pretrain/two_control_pretraining_v2/normal/config.json \
   --mu 0 0.5 0.9 2.5 3.5 --stiffness 1000 --width 0.02 \
-  --output runs/sim_pretrain/normal_friction_ft_v1
+  --output runs/sim_data/normal_friction_ft_v1
 ```
 
 The output directory must not exist or be inside the frozen dataset directory.
@@ -72,15 +72,15 @@ the existing solimp parameter, not the sponge's geometric width.
 ## View And Read
 
 ```bash
-xdg-open runs/sim_pretrain/normal_friction_ft_v1/ft_filtered_comparison.png
-xdg-open runs/sim_pretrain/normal_friction_ft_v1/motion_contact.png
-xdg-open runs/sim_pretrain/normal_friction_ft_v1/mu_0.9/ft.png
+xdg-open runs/sim_data/normal_friction_ft_v1/ft_filtered_comparison.png
+xdg-open runs/sim_data/normal_friction_ft_v1/motion_contact.png
+xdg-open runs/sim_data/normal_friction_ft_v1/mu_0.9/ft.png
 ```
 
 ```python
 import numpy as np
 
-with np.load("runs/sim_pretrain/normal_friction_ft_v1/sweep.npz", allow_pickle=False) as data:
+with np.load("runs/sim_data/normal_friction_ft_v1/sweep.npz", allow_pickle=False) as data:
     print(data["parameters"])  # mu, stiffness_direct, width
     time = data["time"][2]     # mu=0.9, seconds
     ft = data["ft"][2]         # [400,6], raw physical units
@@ -135,7 +135,7 @@ The near-overlap of mu2.5/3.5 FT accompanies very small motion, not equal materi
 friction coefficients or successful high-friction sliding.
 
 All18 common recorded fields at mu0/.9/3.5 exactly reproduce historical
-`runs/sim_pretrain/contact_cartesian_v2/baseline/contact_01/03/05.npz`, respectively.
+`runs/sim_data/contact_cartesian_v2/baseline/contact_01/03/05.npz`, respectively.
 The stacked and individual NPZ arrays agree exactly; all fields are finite.
 Source, dataset, configuration, preprocessing and baseline model hashes are
 unchanged. Four focused tests passed. The first full regression was terminated

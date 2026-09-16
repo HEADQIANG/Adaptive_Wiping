@@ -71,7 +71,7 @@ python -m scripts.sim_pretrain sanity --config configs/sim_pretrain/pretrain_pap
 Optional headless preview (new output filename required):
 
 ```bash
-MUJOCO_GL=egl python -m scripts.sim_pretrain.experiments.visualize_wiping --no-viewer --gif runs/sim_pretrain/wiping_bridge_v1.gif --mu 0 --stiffness 1000 --width 0.02 --speed 1
+MUJOCO_GL=egl python -m scripts.sim_pretrain.experiments.visualize_wiping --no-viewer --gif runs/sim_training/wiping_bridge_v1.gif --mu 0 --stiffness 1000 --width 0.02 --speed 1
 ```
 
 Use `/home/wp/miniconda3/envs/clean/bin/python` if conda activation is unavailable.

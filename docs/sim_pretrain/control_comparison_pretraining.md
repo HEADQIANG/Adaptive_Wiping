@@ -66,7 +66,7 @@ Run from the project root:
 ```bash
 conda activate clean
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m unittest discover -s tests -t . -p test_comparison_collection.py -v
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.collect_control_comparison --output runs/sim_pretrain/two_control_pretraining_v2 --record-only-contact-gate --workers 2
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.collect_control_comparison --output runs/sim_training/two_control_pretraining_v2 --record-only-contact-gate --workers 2
 ```
 
 This opens no viewer and requires no graphics backend. Two worker processes
@@ -80,8 +80,8 @@ read for progress without opening a live HDF5 writer. Do not launch duplicate
 writers on the same mode; a file lock enforces single-writer access.
 
 ```bash
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.collect_control_comparison --output runs/sim_pretrain/two_control_pretraining_v2 --record-only-contact-gate --verify-only
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.summarize_control_data --output runs/sim_pretrain/two_control_pretraining_v2
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.collect_control_comparison --output runs/sim_training/two_control_pretraining_v2 --record-only-contact-gate --verify-only
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.summarize_control_data --output runs/sim_training/two_control_pretraining_v2
 ```
 
 Exit2 means the selected collection is incomplete, including an intentionally
@@ -103,9 +103,9 @@ failure history remain unchanged. No controller or collection source is changed.
 
 ```bash
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m unittest discover -s tests -t . -p test_collection_recovery.py -v
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.recover_control_dataset --output runs/sim_pretrain/two_control_pretraining_v2 --mode impedance --record-only-contact-gate
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.collect_control_comparison --output runs/sim_pretrain/two_control_pretraining_v2 --record-only-contact-gate --verify-only
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.collect_control_comparison --output runs/sim_pretrain/two_control_pretraining_v2 --record-only-contact-gate --workers 2 --retry-failed
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.recover_control_dataset --output runs/sim_training/two_control_pretraining_v2 --mode impedance --record-only-contact-gate
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.collect_control_comparison --output runs/sim_training/two_control_pretraining_v2 --record-only-contact-gate --verify-only
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain.experiments.collect_control_comparison --output runs/sim_training/two_control_pretraining_v2 --record-only-contact-gate --workers 2 --retry-failed
 ```
 
 Use `--retry-failed` only after inspecting the failure history. It retries the
@@ -203,9 +203,9 @@ guard. `evaluate` and `export` can be repeated for the saved model.
 
 ```bash
 conda activate clean
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 flock --nonblock runs/sim_pretrain/two_control_pretraining_v2/normal/.training.lock python -m scripts.sim_pretrain train --config runs/sim_pretrain/two_control_pretraining_v2/normal/config.json
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain evaluate --config runs/sim_pretrain/two_control_pretraining_v2/normal/config.json
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain export --config runs/sim_pretrain/two_control_pretraining_v2/normal/config.json
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 flock --nonblock runs/sim_training/two_control_pretraining_v2/normal/.training.lock python -m scripts.sim_pretrain train --config runs/sim_training/two_control_pretraining_v2/normal/config.json
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain evaluate --config runs/sim_training/two_control_pretraining_v2/normal/config.json
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.sim_pretrain export --config runs/sim_training/two_control_pretraining_v2/normal/config.json
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m unittest discover -s tests -t . -p test_pretraining.py -v
 ```
 
@@ -242,7 +242,7 @@ approval. Small latent variance does not alone prove that absolutely no property
 information exists; no held-out property readout has been evaluated yet.
 
 All 200 history entries and losses were checked, best-epoch selection matches
-the history, checkpoint configuration/runs/sim_pretrain/source hashes match, and recomputing
+the history, checkpoint configuration/runs/sim_training/source hashes match, and recomputing
 preprocessing from training data reproduces the saved statistics. The exported
 encoder is frozen and repeatable on the 100 test trajectories; it agrees with
 saved test means within float32 precision (maximum observed difference <1e-8).

@@ -23,7 +23,7 @@ width 是接触阻抗过渡参数，不是海绵尺寸。gain 随机化还会同
 训练现有 SpongeVAE 1000 轮，CPU 单线程、batch=32、lr=1e-4、beta=0.06。
 预处理仅拟合训练集，每轮统计训练和验证损失；测试集仅最终评估使用。
 
-输出：`runs/sim_pretrain/pretrain_wide_2000_v1/`。
+输出：`runs/sim_training/pretrain_wide_2000_v1/`。
 
 - `manifest.json`、`assignments.json`：配置、代码来源和固定参数分配。
 - `dataset.h5`：完整六维数据、原始数据、清零值、位姿、每条 gain/材料参数及诊断。

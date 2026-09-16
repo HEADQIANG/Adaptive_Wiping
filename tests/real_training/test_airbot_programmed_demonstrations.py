@@ -576,6 +576,18 @@ class ProgramTests(unittest.TestCase):
                 self.assertEqual(dispatch(["run", "--mode", "programmed", "--execute",
                                            "--output", str(self.folder)]), 1)
 
+    def test_execute_reaches_connection_without_consuming_start_key(self):
+        with (
+            patch.object(program, "load_configuration", return_value=(self.cfg, self.pose, self.frozen)),
+            patch.object(program.sys.stdin, "isatty", return_value=True),
+            patch.object(program.Terminal, "ask", side_effect=AssertionError("Unexpected startup prompt")) as prompt,
+            patch.object(program, "open_client", side_effect=RuntimeError("Test connection boundary")) as connect,
+        ):
+            self.assertEqual(dispatch(["run", "--mode", "programmed", "--execute",
+                                       "--output", str(self.folder)]), 1)
+        connect.assert_called_once()
+        prompt.assert_not_called()
+
     def test_waiting_drift_blocks_acceptance(self):
         robot = self.robot
         class DriftingTerminal(Terminal):

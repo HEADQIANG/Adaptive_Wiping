@@ -1,5 +1,10 @@
 # 同海绵、固定安装部署入口
 
+2026-09-14：真机 TCP 标定代码已移除，固定安装流程仍直接使用 SDK 坐标。
+代码来源改变会使已有策略源码绑定和旧回放失效；保留旧产物，不改写哈希放行。
+重新生成兼容产物和验证的步骤见[传感器转换文档](../real_training/airbot_calibrated_pipeline.md)。
+以下既有 v3 预检通过记录仅描述当时版本，不保证当前代码可直接运行。
+
 适用日期：2026-09-13。显式使用 `--mode fixed-setup`，配置为
 `configs/real_deploy/airbot_fixed_setup.json`。默认 `calibrated` 入口和旧标定门禁不变。
 该入口仅绑定当前 `training_programmed_wide1200_v1/policy.pt`、宽范围仿真编码器、
@@ -28,7 +33,7 @@
 
 ## 运动流程与待确认项
 
-只有 `run` 会运动：交互确认后低速直接移向冻结起点，沿用程序示教的启动路径检查，
+只有 `run` 会运动：`--execute` 授权启动，现场检查通过后低速直接移向冻结起点，沿用程序示教的启动路径检查，
 没有避障；到达后等待新的 `s`。`s` 前必须目视确认海绵完全离开表面。
 随后采集基线，执行一次 10 秒策略。不会循环或自动开始第二条。
 
@@ -110,7 +115,7 @@ env -u PYTHONPATH python -m scripts.real_deploy shadow --mode fixed-setup \
   --output runs/real_deploy/fixed_setup_shadow_001/events.jsonl --execute
 ```
 
-输入 `SHADOW` 确认连接，输入新的 `s` 开始。确认基线、原始/扣除/滤波力及推理耗时合理。
+`--execute` 授权只读连接，不再等待启动口令；输入新的 `s` 开始。确认基线、原始/扣除/滤波力及推理耗时合理。
 静止空载不等价于擦拭输入，预测可能触发轨迹边界而退出；不应为完成空载 shadow 而放宽边界。
 shadow 不能验证接触纠偏方向、轨迹跟踪或闭环稳定，也不会因异常替操作者停止由外部控制的机械臂。
 
@@ -124,7 +129,7 @@ env -u PYTHONPATH python -m scripts.real_deploy run --mode fixed-setup \
   --output runs/real_deploy/fixed_setup_attended_001/events.jsonl --execute
 ```
 
-输入 `FIXED-SETUP` 后即会自动直达起点，不是等 `s` 才进行启动移动。
+执行带 `--execute` 的命令后，现场检查通过即会自动直达起点，不是等 `s` 才进行启动移动。
 到位后检查离面再输入 `s`；`q` 不执行策略，但仍须支撑并输入 `IDLE` 交接。
 运动期间预先输入的命令被丢弃。每次使用新日志路径，保存 JSONL 与同名 `.sensor.csv`。
 故障后查看 `aborted`/`stop_error`，确认实际停止并支撑；软件停止未确认时立即使用物理急停。

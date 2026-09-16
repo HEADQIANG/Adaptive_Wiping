@@ -868,6 +868,9 @@ def main():
     parser.add_argument("--dataset-config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     report = execute(args.dataset_config, args.output)
     return 0 if report["stable"] else 2
 

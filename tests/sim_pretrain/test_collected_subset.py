@@ -3,6 +3,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import h5py
 import numpy as np
@@ -15,9 +16,12 @@ from scripts.sim_pretrain.experiments.train_collected_subset import prepare
 class CollectedSubsetTests(unittest.TestCase):
     def test_preserves_source_and_disjoint_mapping_and_resume(self):
         with tempfile.TemporaryDirectory() as tmp:
-            source, out = Path(tmp)/"source", Path(tmp)/"out"
+            source, out = Path(tmp)/"source", Path(tmp)/"runs/sim_training/out"
+            storage = patch("scripts.shared.paths.RUNS", Path(tmp)/"runs")
+            storage.start()
+            self.addCleanup(storage.stop)
             source.mkdir()
-            out.mkdir()
+            out.mkdir(parents=True)
             cfg = load_config("configs/sim_pretrain/pretrain_wide_1200.yaml")
             cfg["dataset"] = dict(train=4,validation=1,test=1)
             cfg["output_dir"] = str(out)
@@ -42,6 +46,8 @@ class CollectedSubsetTests(unittest.TestCase):
                 g.create_dataset("error",data=[""]*8,dtype=h5py.string_dtype())
             before=file_digest(source/"dataset.h5")
             prepare(cfg,source,out)
+            self.assertTrue((out/"dataset.h5").is_symlink())
+            self.assertTrue((Path(tmp)/"runs/sim_data/out/dataset.h5").is_file())
             self.assertEqual(file_digest(source/"dataset.h5"),before)
             with h5py.File(out/"dataset.h5","r") as h5:
                 self.assertTrue(h5.attrs["complete"])

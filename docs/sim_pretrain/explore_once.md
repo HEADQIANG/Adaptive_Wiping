@@ -48,7 +48,7 @@ MPLBACKEND=TkAgg /home/wp/miniconda3/envs/clean/bin/python -m scripts.sim_pretra
 | `--no-viewer` | 只显示曲线，不打开 MuJoCo 窗口 |
 | `--close-after-run` | 保存后自动关闭两个窗口，适合单次验证 |
 
-默认保存到 `runs/sim_pretrain/explore_once_<时间戳>/`：
+默认保存到 `runs/sim_data/explore_once_<时间戳>/`：
 
 - `exploration.npz`：一条 `400×6` 的 `ft`，同形状 `ft_raw`，六维 `initial_bias`，时间、位姿、接触数和其他诊断字段。
 - `ft.png`：本次六维曲线截图。

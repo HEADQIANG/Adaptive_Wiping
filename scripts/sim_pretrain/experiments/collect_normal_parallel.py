@@ -234,6 +234,10 @@ def main():
     args = parser.parse_args()
     if not args.record_only_contact_gate:
         parser.error("Explicit --record-only-contact-gate authorization is required")
+    if args.verify_pilot is None:
+        from scripts.shared.run_paths import new_output
+
+        args.output = new_output(args.output, resume=(Path(args.output) / "manifest.json").is_file())
     manifest, configs = initialize(args.output, load_config(args.config))
     cfg = configs["normal"]
     if args.verify_pilot is not None:

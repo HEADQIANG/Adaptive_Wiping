@@ -57,8 +57,11 @@ def smoke_test(config, output):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/sim_pretrain/pretrain_paper_mu1p2.yaml")
-    parser.add_argument("--output", required=True, help="Fresh runs/sim_pretrain directory")
+    parser.add_argument("--output", required=True, help="Fresh runs/sim_training directory")
     args = parser.parse_args(argv)
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     print(json.dumps(smoke_test(args.config, args.output), indent=2))
     return 0
 

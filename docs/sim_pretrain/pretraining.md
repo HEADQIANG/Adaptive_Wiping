@@ -71,7 +71,7 @@ followed by repeatable playback, without changing controller or contact physics.
 
 The current configuration uses `simulation.inertia_profile: discoverse_standard`.
 The historical run is preserved in `archive/sim_pretrain/pretrain_paper_discoverse_inertia`;
-new outputs use the configured `runs/sim_pretrain/` directory. At XML assembly time,
+new outputs use the configured `runs/sim_training/` directory. At XML assembly time,
 only the six arm-link inertials (mass, center of mass, principal inertia and its
 orientation) are copied from
 `asserts/references/discoverse/airbot_play.xml`, and all six arm
@@ -133,7 +133,7 @@ Run the isolated contact diagnostic at the currently selected gain 300:
 ```bash
 conda activate clean
 python -m unittest discover -s tests -t . -p 'test_contact_diagnosis.py' -v
-python -m scripts.sim_pretrain.experiments.diagnose_contact --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_pretrain/contact_diagnosis_repeat
+python -m scripts.sim_pretrain.experiments.diagnose_contact --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_data/contact_diagnosis_repeat
 ```
 
 The output directory must not exist; choose a new `--output` for repeat runs.
@@ -197,7 +197,7 @@ The extended inertia audit additionally records compiled joint armature and its
 algebraic contribution to requested torque. Reproduce it separately with:
 
 ```bash
-python -m scripts.sim_pretrain.experiments.diagnose_reversal --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_pretrain/reversal_diagnosis_inertia
+python -m scripts.sim_pretrain.experiments.diagnose_reversal --config configs/sim_pretrain/pretrain_paper.yaml --output runs/sim_data/reversal_diagnosis_inertia
 ```
 
 This does not zero or otherwise change armature. Subtracting its contribution
@@ -322,7 +322,7 @@ Frozen encoder usage, after a successful export:
 
 ```python
 from scripts.sim_pretrain.learning import FrozenSpongeEncoder
-encoder = FrozenSpongeEncoder("runs/sim_pretrain/pretrain_paper_discoverse_inertia/encoder.pt")
+encoder = FrozenSpongeEncoder("runs/sim_training/pretrain_paper_discoverse_inertia/encoder.pt")
 mu = encoder.encode(raw_ft)  # finite numpy array [B,400,6] -> [B,5]
 ```
 

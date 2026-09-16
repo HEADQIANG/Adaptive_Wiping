@@ -109,6 +109,24 @@ def load_configuration(path):
         "position_frame": "SDK configured end; not calibrated sponge TCP",
         "clock": "host monotonic (pose) / perf_counter (FT); no hardware timestamps",
     }
+    if "exploration_log" in spec or "exploration_setup_confirmed" in spec:
+        from scripts.real_training.manual_exploration_contract import PROTOCOL as MANUAL_PROTOCOL, load_completed, verify_setup
+
+        if spec.get("exploration_setup_confirmed") is not True:
+            raise ValueError("Confirm same sponge/tool/sensor installation and table directions before binding exploration")
+        if not isinstance(spec.get("exploration_log"), str) or not spec["exploration_log"].strip():
+            raise ValueError("Set the completed manual exploration_log before collecting new demonstrations")
+        exploration_path = resolve(spec["exploration_log"])
+        header, exploration_hash = load_completed(exploration_path)
+        verify_setup(header, cfg)
+        binding = {"path": str(exploration_path), "sha256": exploration_hash,
+                   "acquisition_protocol": MANUAL_PROTOCOL, "exploration_id": cfg["exploration_id"],
+                   "same_setup_confirmed": True}
+        cfg["exploration_binding"] = binding
+        frozen["exploration_binding"] = binding
+        frozen["source_hashes"][str(exploration_path)] = exploration_hash
+        if digest(exploration_path) != exploration_hash:
+            raise ValueError("Exploration changed while binding the new session")
     return cfg, record["initial_pose"], frozen
 
 
@@ -422,6 +440,8 @@ def record_episode(robot, sensor, cfg, pose, condition, path, terminal):
                              "source_kind": "real", "demonstration_source": "programmed",
                              "training_ready": False, "motion_policy": "fixed-depth",
                              "force_feedback_enabled": False,
+                             **({"exploration_sha256": cfg["exploration_binding"]["sha256"]}
+                                if "exploration_binding" in cfg else {}),
                              "max_depth_m": cfg["max_depth_m"]})
         baseline = collect_baseline(robot, sensor, cfg, pose, stream)
         terminal.discard()
@@ -530,6 +550,20 @@ def record_episode(robot, sensor, cfg, pose, condition, path, terminal):
 
 def accepted_records(folder):
     records = []
+    manifest = folder / "session.json"
+    frozen = json.loads(manifest.read_text()) if manifest.exists() else {}
+    binding = frozen.get("exploration_binding")
+    if binding != frozen.get("config", {}).get("exploration_binding"):
+        raise ValueError("Program exploration binding differs from frozen configuration")
+    expected_exploration_hash = None
+    if binding is not None:
+        from scripts.real_training.manual_exploration_contract import load_completed, verify_binding
+
+        header, source_hash = load_completed(binding["path"])
+        verify_binding(binding, header, source_hash, frozen["config"])
+        if frozen.get("source_hashes", {}).get(binding["path"]) != source_hash:
+            raise ValueError("Exploration hash differs from frozen session sources")
+        expected_exploration_hash = source_hash
     paths = sorted(folder.glob("demo_*.json"))
     if [p.name for p in paths] != [f"demo_{i:02d}.json" for i in range(1, len(paths) + 1)] or len(paths) > 8:
         raise ValueError("Accepted program demos must be consecutive 01..08")
@@ -547,6 +581,9 @@ def accepted_records(folder):
                 or entry.get("return_confirmed") is not True or not entry.get("quality", {}).get("passed")):
             raise ValueError("Invalid accepted program demonstration")
         events = [json.loads(line) for line in raw.read_text().splitlines()]
+        if (entry.get("exploration_sha256") != expected_exploration_hash
+                or not events or events[0].get("exploration_sha256") != expected_exploration_hash):
+            raise ValueError("Demonstrations must be collected after binding this exploration; old attempts cannot be relinked")
         if (events[0].get("protocol") != PROTOCOL or events[0].get("condition") != SEQUENCE[index]
                 or events[0].get("event") != "attempt_start"
                 or events[0].get("motion_policy") != "fixed-depth" or events[0].get("force_feedback_enabled") is not False
@@ -578,6 +615,8 @@ def freeze_session(folder, frozen):
     else:
         if any(folder.glob("demo_*.json")):
             raise ValueError("Accepted files exist without session metadata")
+        if frozen.get("exploration_binding") and any(folder.glob("attempt_*.jsonl")):
+            raise ValueError("Existing attempts cannot be retroactively linked; use a new session directory")
         write_json(manifest, frozen)
 
 
@@ -639,6 +678,8 @@ def session(robot, sensor, cfg, pose, folder, terminal, recorder=record_episode)
                      "demonstration_source": "programmed", "training_ready": False,
                      "motion_policy": "fixed-depth", "force_feedback_enabled": False,
                      "condition": SEQUENCE[count], "initial_depth_m": DEPTHS[SEQUENCE[count]],
+                     **({"exploration_sha256": cfg["exploration_binding"]["sha256"]}
+                        if "exploration_binding" in cfg else {}),
                      "raw_file": raw.name, "sha256": digest(raw), **report}
             write_json(folder / f"demo_{count + 1:02d}.json", entry)
             count += 1
@@ -667,7 +708,8 @@ def session(robot, sensor, cfg, pose, folder, terminal, recorder=record_episode)
 
 def main(args):
     args.config = args.config or ROOT / "configs/real_training/airbot_programmed_demonstrations.json"
-    args.output = args.output or ROOT / "runs/real_training/programmed_demonstrations/fixed_depth_session_001"
+    output_supplied = args.output is not None
+    args.output = args.output or ROOT / "runs/real_demonstrations/programmed/fixed_depth_session_001"
     client = sensor = lock = None
     previous_signal = None
     try:
@@ -715,6 +757,11 @@ def main(args):
                 raise ValueError("run requires --execute and an attended terminal")
             import fcntl
 
+            from scripts.shared.run_paths import new_output
+
+            args.output = new_output(
+                args.output, resume=output_supplied and (args.output / "session.json").is_file()
+            )
             args.output.mkdir(parents=True, exist_ok=True)
             lock = (args.output / ".lock").open("a")
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -724,8 +771,7 @@ def main(args):
                 return 0
             terminal = Terminal()
             print("Automatic DIRECT startup move before first s. Verify clear current-to-start path, --no-return, full +/-50mm path, 12mm press, 20mm boundary and emergency stop. No collision avoidance; no force feedback.")
-            if terminal.ask("Type PROGRAMMED + Enter to confirm onsite readiness.", lambda: None) != "PROGRAMMED":
-                return 0
+            print("--execute authorizes the startup move; s still starts each recording.")
             if any(digest(p) != h for p, h in frozen["source_hashes"].items()):
                 raise ValueError("Configuration/start changed after preview; restart with verified setup")
             previous_signal = signal.signal(signal.SIGTERM, interrupt_on_signal)

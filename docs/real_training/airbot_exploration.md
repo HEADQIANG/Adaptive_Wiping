@@ -1,5 +1,17 @@
 # AIRBOT Play 5.2.2 真实探索动作
 
+2026-09-15 输出规则更新：新结果自动增加 `MMDD_HHMMSS` 时间目录（如 `0915_142205`）。
+后续关联、状态查询及续跑使用终端打印的实际路径；多阶段训练使用打印的 `run_config.yaml`。
+下文未带时间层的历史路径示例不代表新文件的实际路径，完整新命令见 [runs 输出操作步骤](../run_outputs.md)。
+
+2026-09-15：默认入口已改为 **manual-start**：拖拽后按 `h` 固定，按 `s` 清零并探索，
+回撤后保持，输入 `IDLE` 退出。无独立起点文件、无起点匹配/静止/载荷阈值验收。
+重力补偿拖拽期间（含 h 捕获参考）不执行项目侧速度阈值检查，速度防护仅依赖 SDK/固件；
+切入 servo 后仍执行 1.2 rad/s 实测超速停止。其他健康、控制权、数据和力流时效检查不变。
+完整命令、保留的保护与新示教训练关联见 [手动起点探索](manual_start_exploration.md)。
+下文属于显式 `--mode force-guarded` 旧模式或历史记录；运行其命令须补上该模式参数，
+不要把旧模式保护套给新的默认流程。
+
 2026-09-12：已按用户要求移除项目 XYZ 工作空间边界。无需填写
 `workspace_min_m/max_m`，也不再因这些边界拒绝起点、目标或实际反馈。
 下方旧现场记录中的工作空间描述仅为历史说明；当前流程见
@@ -143,7 +155,7 @@ sudo setfacl -m u:wp:rw /dev/ttyUSB0
 现场配置完成后，在项目根目录使用以下只读检查命令（不运动、不打开串口）：
 
 ```bash
-env PYTHONPATH='/media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping' /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore check
+env PYTHONPATH='/media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping' /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore check --mode force-guarded
 ```
 
 此前起点更新只修改配置；本次按操作者确认取消所有运行位置/姿态跟踪停止并保留日志。
@@ -157,10 +169,10 @@ env PYTHONPATH='/media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping' /h
 若重录了新起点，需先更新配置与边界，不能只更换输出文件名。
 
 ```bash
-env PYTHONPATH='/media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping' /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run --execute --time-scale 1 --output runs/real_training/real_robot/exploration_ft_007.jsonl
+env PYTHONPATH='/media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping' /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run --mode force-guarded --execute --time-scale 1 --output runs/real_exploration/exploration_ft_007.jsonl
 ```
 
-输入 `EXPLORE` 后才连接硬件并尝试运动。4 秒探索（400 个目标采样）后，另用 2 秒
+`--execute` 授权连接硬件，检查通过即尝试运动，不再等待启动口令。4 秒探索（400 个目标采样）后，另用 2 秒
 回撤 10 mm；回撤不属于编码器输入。回撤后仍为 servo，按提示安排安全支撑再输入
 `IDLE`，看到 `session_complete` 才完成退出。中止后不自动重试、不自动提高限值，
 已有日志禁止覆盖；保留中止日志分析原因。当前控制代码仍有 5 ms 迟到及 20 ms FT
@@ -218,7 +230,7 @@ SDK servo 的伺服增益、逆解、速度限制、真实海绵和接触动力�
 ```bash
 cd /media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m pip install -r requirements/robot_control.txt
-env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore preview
+env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore preview --mode force-guarded
 ```
 
 预览只依赖标准库，可在安装 numpy/pyserial 前运行。`run` 复用现有 KWR75 串口读取器，
@@ -237,7 +249,7 @@ KWR75 不能同时被绘图器或其他采集进程占用。确认 `/dev/ttyUSB0
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.airbot_initial_pose teach \
-  --execute --output runs/real_training/real_robot/initial_pose_001.json \
+  --execute --output runs/real_exploration/initial_pose_001.json \
   --label exploration_start --tool-note "Actual installed sensor, mount and sponge"
 ```
 
@@ -277,7 +289,7 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.a
 填写配置后先检查（连接 SDK 仅读取状态，不申请控制权，不打开传感器）：
 
 ```bash
-env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore check
+env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore check --mode force-guarded
 ```
 
 要求控制器为 idle。当前位姿与记录的差距须不大于 1 mm、0.02 rad、任一关节 0.03 rad；
@@ -288,8 +300,8 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training e
 首次经过现场运动验收后，可用 5 倍时间进行有人监护的低速调试：
 
 ```bash
-env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run \
-  --execute --time-scale 5 --output runs/real_training/real_robot/exploration_slow_001.jsonl
+env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run --mode force-guarded \
+  --execute --time-scale 5 --output runs/real_exploration/exploration_slow_001.jsonl
 ```
 
 该模式 20 秒探索、10 秒回撤，采样仍为 100 Hz。它不匹配 4 秒训练协议，不能用于原编码器。
@@ -297,11 +309,11 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training e
 正式目标协议命令为：
 
 ```bash
-env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run \
-  --execute --time-scale 1 --output runs/real_training/real_robot/exploration_001.jsonl
+env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run --mode force-guarded \
+  --execute --time-scale 1 --output runs/real_exploration/exploration_001.jsonl
 ```
 
-1. 屏幕要求输入 `EXPLORE` 才连接硬件；其他输入取消。全程必须有急停监护和安全支撑方案。
+1. 执行带 `--execute` 的命令前完成现场检查；不再等待启动口令。全程必须有急停监护和安全支撑方案。
 2. 正常通过检查后开始探索和回撤。禁止同时拖拽、运行其他控制脚本或拔插连接。
 3. 正常回撤后 servo 仍激活，持续检查位姿和力。不要关终端或假设断开后可保持。
 4. 按现场规程安排安全支撑后输入 `IDLE`，脚本请求 idle、确认响应，再关闭客户端。
@@ -367,6 +379,6 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m unittest discover -s te
 SDK 保持 5.2.2，仅补装 numpy 2.2.6、pyserial 3.5，`pip check` 通过；
 `clean` 补装 pyserial 3.5。预览和未标定配置拒绝执行的入口均已验证。
 
-本次只读检查 `127.0.0.1:50051` 连接超时，`runs/real_training/real_robot` 中未找到起点记录。
+本次只读检查 `127.0.0.1:50051` 连接超时，`runs/real_exploration` 中未找到起点记录。
 未启动服务、未修改 CAN/SDK 配置、未执行运动或传感器串口操作。上机前需要按现场实际
 服务地址和起点文件重新检查，软件测试通过不能替代真机验收。

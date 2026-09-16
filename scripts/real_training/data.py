@@ -10,6 +10,7 @@ import torch
 
 from scripts.real_training.config import (
     native_profile,
+    sdk_position_profile,
     output_lock,
     preparation_contract,
     resolve,
@@ -97,10 +98,12 @@ def _metadata(meta, cfg):
             calibration_status="unverified",
             resampling="causal_latest_received_100hz_max_age_20ms",
         )
+    if cfg["profile"] == "airbot_sensor_calibrated_offline":
+        expected["position_frame"] = "SDK configured reference"
     for key, value in expected.items():
         if meta.get(key) != value:
             raise ValueError(f"Incompatible metadata.{key}; expected {value!r}")
-    for key in ("robot_id", "sensor_id", "calibration_id", "tcp_definition", "sensor_frame"):
+    for key in ("robot_id", "sensor_id", "calibration_id", "sensor_frame"):
         if not isinstance(meta.get(key), str) or not meta[key].strip():
             raise ValueError(f"Missing metadata.{key}")
     if native_profile(cfg):
@@ -164,8 +167,11 @@ def _load_raw(cfg, *, testing=False):
         meta = json.loads(h5.attrs["metadata"])
         _metadata(meta, cfg)
         if len(h5["explorations"]) != 1 or len(h5["demonstrations"]) != 8:
-            raise ValueError("Expected exactly one Normal exploration and eight demonstrations")
+            raise ValueError("Expected exactly one exploration and eight demonstrations")
         exp_id = next(iter(h5["explorations"]))
+        sponge_id = h5["explorations"][exp_id].attrs.get("sponge_id")
+        if not isinstance(sponge_id, str) or not sponge_id.strip():
+            raise ValueError("Missing exploration sponge_id")
         arrays, ids, surfaces = {}, [], set()
         for category in ("explorations", "demonstrations"):
             episodes = []
@@ -173,8 +179,10 @@ def _load_raw(cfg, *, testing=False):
                 attrs = group.attrs
                 if not _completed(attrs.get("complete")) or attrs.get("source_kind") != source:
                     raise ValueError(f"Incomplete or inconsistent episode: {episode_id}")
-                if attrs.get("sponge_id") != "normal":
+                if not sdk_position_profile(cfg) and attrs.get("sponge_id") != "normal":
                     raise ValueError("Paper downstream data must use sponge_id=normal")
+                if attrs.get("sponge_id") != sponge_id:
+                    raise ValueError("Exploration and demonstrations must share one sponge_id")
                 if cfg["profile"] == "airbot_native_tared_offline":
                     bias = finite_array(group["recorded_unloaded_baseline"][:], "recorded baseline")
                     raw_ft = finite_array(group["ft_raw_before_baseline"][:], "preserved raw FT")
@@ -199,8 +207,8 @@ def _load_raw(cfg, *, testing=False):
                     raise ValueError("Missing demonstration surface_id")
                 surfaces.add(surface)
                 pose_hz = float(attrs["pose_hz"])
-                position_key = "sdk_end_position" if native_profile(cfg) else "tcp_position"
-                quaternion_key = "sdk_end_quaternion" if native_profile(cfg) else "tcp_quaternion"
+                position_key = "sdk_end_position" if sdk_position_profile(cfg) else "tcp_position"
+                quaternion_key = "sdk_end_quaternion" if sdk_position_profile(cfg) else "tcp_quaternion"
                 pose_time, position = _stream(
                     group, "pose_time", position_key, 3, start, duration, pose_hz, cfg
                 )
@@ -208,7 +216,7 @@ def _load_raw(cfg, *, testing=False):
                     group, "pose_time", quaternion_key, 4, start, duration, pose_hz, cfg
                 )
                 if not np.allclose(np.linalg.norm(quaternion, axis=1), 1.0, atol=1e-3, rtol=0):
-                    raise ValueError("TCP orientation must use unit xyzw quaternions")
+                    raise ValueError("End orientation must use unit xyzw quaternions")
                 p = cfg["processing"]
                 if native_profile(cfg):
                     grid = np.arange(1001, dtype=np.float64) / 100
@@ -345,7 +353,6 @@ def inspect(cfg, *, testing=False):
                 "UNCALIBRATED_AIRBOT_NATIVE_FRAME_OFFLINE_EXPERIMENT",
                 "sensor_to_simulation_frame_unknown_embedding_not_physically_validated",
                 "received_ft_about_56hz_causal_hold_to_100hz_not_100hz_independent_measurements",
-                "SDK_end_not_calibrated_sponge_TCP",
                 ("recorded_unloaded_baseline_removed_not_full_gravity_or_frame_calibration"
                  if cfg["profile"] == "airbot_native_tared_offline"
                  else "raw_electronic_bias_and_gravity_retained"),
@@ -358,6 +365,11 @@ def inspect(cfg, *, testing=False):
             "padded_tail_included_in_training_and_metrics_can_favor_zero_height_change",
             "fixed_depth_demonstrations_do_not_demonstrate_force_feedback_corrections",
         ])
+    if info["metadata"].get("derivation") == "manual_recorded_baseline_10s_v1":
+        warnings.append("manual_setup_confirmed_after_collection_not_prebound_or_calibrated")
+        completion = info["metadata"]["collection_report"]["exploration"]["completion"]
+        if completion.get("position_rms_within_simulation_1mm") is False:
+            warnings.append("real_exploration_tracking_exceeds_simulation_1mm")
     if _has_quality_warning(payload.get("evaluation", {})):
         warnings.append("source_encoder_quality_warning")
     if np.any((normalized < 0) | (normalized > 0.9)):

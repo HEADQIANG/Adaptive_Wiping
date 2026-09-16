@@ -14,11 +14,9 @@
   "expected_eef_type": "NULL",
   "calibration_id": null,
   "calibration_record": "configs/robot_control/airbot_calibration.json",
-  "base_from_sdk": null,
-  "end_from_tcp": null,
   "sensor_to_ft_frame": null,
   "sensor_bias_si": null,
-  "initial_tcp_position_m": null,
+  "initial_sdk_position_m": null,
   "sdk_end_orientation_xyzw": null,
   "joint_min_rad": [
     -3.141592653589793,

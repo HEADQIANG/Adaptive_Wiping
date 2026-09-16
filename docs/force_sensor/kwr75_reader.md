@@ -120,7 +120,10 @@ python -m pip install matplotlib
 保持工具静止、悬空且无人接触，执行以下命令，采集 60 秒、实时显示最近 10 秒并保存 CSV：
 
 ```bash
-python -m scripts.force_sensor.kwr75_reader \
+cd /media/wp/新加卷/yuelk_project/claen_wipe/Adaptive_Wiping
+
+env -u PYTHONPATH .venv-kwr75/bin/python \
+  -m scripts.force_sensor.kwr75_reader \
   --port /dev/ttyUSB0 --tare --secs 60 \
   --plot --plot-window 10 \
   --csv "runs/force_sensor/kwr75_$(date +%Y%m%d_%H%M%S).csv"
@@ -233,11 +236,19 @@ python -m scripts.force_sensor.kwr75_net_peaks archive/force_sensor/historical_l
 
 ## 无硬件验证
 
+程序接口支持 `reader.start_csv(path, background=True)`：CSV 由单独线程写盘，
+此时 `flush_csv()` 只检查记录器/串口错误，不同步等待落盘；`stop_csv()` 或 `stop()`
+先分离记录器，再等待剩余记录写完，最长等待 2 秒，超时或写入失败会明确报错。
+队列仍为 1024 批，满队列不阻塞串口采集，但会标记记录不完整，调用方必须停止当前任务。
+默认 `background=False`，现有传感器 CLI 命令和行为不变。现场起点部署自动开启后台模式，
+见 [部署运行说明](../real_deploy/manual_tared.md)。
+
 ```bash
 .venv-kwr75/bin/python -m unittest discover -s tests -t . -p 'test_kwr75_reader.py' -v
 .venv-kwr75/bin/python -m unittest discover -s tests -t . -p 'test_kwr75_plot.py' -v
 .venv-kwr75/bin/python -m unittest discover -s tests -t . -p 'test_kwr75_net_peaks.py' -v
 .venv-kwr75/bin/python -m unittest discover -s tests -t . -p 'test_kwr75_live_plot.py' -v
+env -u PYTHONPATH /home/wp/miniconda3/envs/clean/bin/python -m unittest tests.real_deploy.test_recording -v
 ```
 
 测试使用模拟串口，覆盖分片帧、整批记录、时间戳、清零值、防覆盖、队列溢出、

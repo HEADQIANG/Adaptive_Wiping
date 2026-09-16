@@ -64,6 +64,14 @@ def check_bounds(state, cfg):
         raise StateError("Joint position outside approved limits")
 
 
+def torque_limit_enforced(cfg):
+    policy = cfg.get("torque_limit_policy", "stop")
+    if (policy not in ("stop", "record-only")
+            or (policy == "record-only" and cfg.get("deployment_mode") != "manual_tared_original_v1")):
+        raise ValueError("Torque record-only is restricted to original manual deployment")
+    return policy == "stop"
+
+
 def read_force(sensor, cfg, *, initial=False):
     if no_ft(cfg):
         return None
@@ -82,7 +90,7 @@ def read_force(sensor, cfg, *, initial=False):
     raw = vector(raw, 6, "raw sensor wrench")
     wrench = [x - b for x, b in zip(raw, cfg["sensor_bias_si"])]
     limit = cfg["max_initial_force_n"] if initial else cfg["max_force_n"]
-    if norm(wrench[:3]) > limit or norm(wrench[3:]) > cfg["max_torque_nm"]:
+    if norm(wrench[:3]) > limit or (torque_limit_enforced(cfg) and norm(wrench[3:]) > cfg["max_torque_nm"]):
         raise StateError(f"Force/torque limit exceeded: {wrench}")
     return {
         "sensor_receive_perf_s": stamp,

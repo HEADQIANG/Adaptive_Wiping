@@ -23,7 +23,7 @@ MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.stiffness_ft_sweep \
   --dataset-config archive/sim_pretrain/two_control_pretraining_v2/normal/config.json \
   --stiffness 0.5 10 100 250 500 1000 --mu 0.9 --width 0.02 \
-  --output runs/sim_pretrain/normal_stiffness_ft_v1
+  --output runs/sim_data/normal_stiffness_ft_v1
 ```
 
 The directory must not exist or be inside the frozen dataset directory.
@@ -72,15 +72,15 @@ trace is not proof of realistic sponge deformation or material calibration.
 ## View And Read
 
 ```bash
-xdg-open runs/sim_pretrain/normal_stiffness_ft_v1/ft_filtered_comparison.png
-xdg-open runs/sim_pretrain/normal_stiffness_ft_v1/ft_raw_comparison.png
-xdg-open runs/sim_pretrain/normal_stiffness_ft_v1/motion_contact.png
+xdg-open runs/sim_data/normal_stiffness_ft_v1/ft_filtered_comparison.png
+xdg-open runs/sim_data/normal_stiffness_ft_v1/ft_raw_comparison.png
+xdg-open runs/sim_data/normal_stiffness_ft_v1/motion_contact.png
 ```
 
 ```python
 import numpy as np
 
-with np.load("runs/sim_pretrain/normal_stiffness_ft_v1/sweep.npz", allow_pickle=False) as data:
+with np.load("runs/sim_data/normal_stiffness_ft_v1/sweep.npz", allow_pickle=False) as data:
     print(data["parameters"])  # mu, stiffness_direct, width
     time = data["time"][2]     # k=100, seconds
     ft = data["ft"][2]         # [400,6], physical units
@@ -138,7 +138,7 @@ full trajectory. Lower k does not ensure a smaller transient peak under this
 coupled contact/controller dynamics. No unique mechanical cause is inferred.
 
 All18 original recorded fields at k=.5/1000 exactly match historical
-`runs/sim_pretrain/contact_cartesian_v2/baseline/contact_02/03.npz`, respectively.
+`runs/sim_data/contact_cartesian_v2/baseline/contact_02/03.npz`, respectively.
 At k1000, all19 fields including filtered FT exactly match
 `archive/sim_pretrain/normal_friction_ft_v1/mu_0.9/trajectory.npz`. Stacked and individual
 arrays agree exactly, all six target arrays match, and protected source/data/

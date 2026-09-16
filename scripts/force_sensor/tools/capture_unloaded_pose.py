@@ -159,4 +159,7 @@ if __name__ == "__main__":
         help="Only after current explicit onsite confirmation: unchanged tool, suspended and untouched",
     )
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     print(json.dumps(capture(args.output, confirmed=args.contact_free_confirmed), indent=2))

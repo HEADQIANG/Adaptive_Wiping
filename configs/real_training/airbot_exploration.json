@@ -5,7 +5,7 @@
   "robot_sn": "PZ60C02603000943",
   "expected_eef_type": "NULL",
   "sdk_frame_and_tool_note": "Operator confirmed SDK +Z up, +Y slide, 1 mm sponge/table gap and clear full 20 mm press / 50 mm slide path. Installed KWR75A and sponge; NULL end effector. SDK end frame is not a calibrated sponge TCP. Historical local workspace was the target envelope plus 5 mm monitoring margin, not collision certification; project XYZ bounds were removed at user request on 2026-09-12. Zero configured bias means raw sensor load is retained for safety checks, not an independently measured electronic zero.",
-  "initial_pose_file": "runs/real_training/real_robot/exploration_start_008.json",
+  "initial_pose_file": "runs/real_exploration/exploration_start_008.json",
   "table_normal_sdk": [
     0.0,
     0.0,

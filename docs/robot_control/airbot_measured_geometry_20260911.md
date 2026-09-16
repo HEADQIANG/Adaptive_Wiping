@@ -105,7 +105,7 @@ It does not fit free offsets, overwrite existing reports or modify source data.
 ```bash
 /home/wp/miniconda3/envs/clean/bin/python -m scripts.robot_control.tools.audit_airbot_frames \
   --startup-log /home/wp/.codex/attachments/8ac96f64-5ca8-4f09-8b83-3489f1c5f2fd/pasted-text.txt \
-  --output runs/robot_control/airbot_frame_audit_20260911_v2.json
+  --output runs/real_deploy/robot_control/airbot_frame_audit_20260911_v2.json
 /home/wp/miniconda3/envs/clean/bin/python -m unittest discover -s tests -t . -p 'test_airbot_frame_audit.py' -v
 ```
 

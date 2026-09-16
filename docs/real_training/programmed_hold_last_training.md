@@ -39,8 +39,8 @@
 ```bash
 env -u PYTHONPATH /home/wp/miniconda3/envs/clean/bin/python -m scripts.real_training import-airbot \
   --config configs/real_training/real_training_programmed_hold_last.yaml \
-  --exploration runs/real_training/real_robot/exploration_tared_plot_003.jsonl \
-  --session runs/real_training/programmed_demonstrations/direct_start_session_004 \
+  --exploration runs/real_exploration/exploration_tared_plot_003.jsonl \
+  --session runs/real_demonstrations/programmed/direct_start_session_004 \
   --programmed-hold-last --audit-only
 ```
 
@@ -49,8 +49,8 @@ env -u PYTHONPATH /home/wp/miniconda3/envs/clean/bin/python -m scripts.real_trai
 ```bash
 env -u PYTHONPATH /home/wp/miniconda3/envs/clean/bin/python -m scripts.real_training import-airbot \
   --config configs/real_training/real_training_programmed_hold_last.yaml \
-  --exploration runs/real_training/real_robot/exploration_tared_plot_003.jsonl \
-  --session runs/real_training/programmed_demonstrations/direct_start_session_004 \
+  --exploration runs/real_exploration/exploration_tared_plot_003.jsonl \
+  --session runs/real_demonstrations/programmed/direct_start_session_004 \
   --programmed-hold-last
 ```
 

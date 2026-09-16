@@ -182,6 +182,9 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument("--mode", choices=("ik_ff", "osc", "both"), default="both")
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=False)
     source = load_config(args.config)

@@ -3,15 +3,18 @@
 import copy
 import io
 import json
+import tempfile
 import threading
 import unittest
 from collections import deque
+from contextlib import redirect_stderr
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 from scripts.force_sensor.kwr75_reader import Kwr75Reader
+from scripts.real_deploy import airbot_deploy as deploy
 from scripts.real_deploy.airbot_deploy import (
     Frames,
     PolicyLoop,
@@ -100,8 +103,6 @@ class FakeSensor:
 class DeploymentTests(unittest.TestCase):
     def setUp(self):
         self.cfg = {
-            "base_from_sdk": np.eye(4).tolist(),
-            "end_from_tcp": np.eye(4).tolist(),
             "sensor_to_ft_frame": np.eye(4).tolist(),
             "sensor_bias_si": [0] * 6,
             "joint_min_rad": [-3] * 6,
@@ -116,22 +117,9 @@ class DeploymentTests(unittest.TestCase):
             "max_tracking_error_m": 0.002,
             "max_start_error_m": 0.001,
             "orientation_error_limit_rad": 0.02,
-            "initial_tcp_position_m": [0.1, 0.2, 0.3],
+            "initial_sdk_position_m": [0.1, 0.2, 0.3],
             "sdk_end_orientation_xyzw": [0, 0, 0, 1],
         }
-
-    def test_frame_roundtrip_with_rotation_and_offset(self):
-        cfg = copy.deepcopy(self.cfg)
-        cfg["base_from_sdk"][:3] = np.c_[
-            Rotation.from_euler("z", 40, degrees=True).as_matrix(), [1, 2, 3]
-        ].tolist()
-        cfg["end_from_tcp"][0][3] = 0.03
-        frames = Frames(cfg)
-        q = Rotation.from_euler("x", 30, degrees=True).as_quat()
-        state = {"sdk_end_position_m": [0.1, 0.2, 0.3], "sdk_end_orientation_xyzw": q}
-        np.testing.assert_allclose(
-            frames.to_end(frames.to_tcp(state), q), state["sdk_end_position_m"], atol=1e-12
-        )
 
     def test_wrench_translation_includes_lever_arm_and_bias(self):
         cfg = copy.deepcopy(self.cfg)
@@ -140,6 +128,31 @@ class DeploymentTests(unittest.TestCase):
         np.testing.assert_allclose(Frames(cfg).wrench([1, 2, 0, 0, 0, 0]), [0, 2, 0, 0, 0, 0.2])
         with self.assertRaises(ValueError):
             Frames(cfg).wrench([1])
+
+    def test_execute_reaches_connection_without_startup_prompt(self):
+        policy = FakePolicy()
+        policy.metadata = {"data": {"metadata": {}}}
+        cfg = {**self.cfg, "policy": "test-policy.pt", "exploration": "test-exploration.npz",
+               "calibration_record": "test-calibration.json"}
+        with tempfile.TemporaryDirectory() as folder:
+            config = Path(folder) / "config.json"
+            config.write_text(json.dumps(cfg))
+            with (
+                patch.object(deploy, "file_digest", return_value="test-hash"),
+                patch.object(deploy, "OfflinePolicy", return_value=policy),
+                patch.object(deploy, "deployment_blockers", return_value=[]),
+                patch.object(deploy, "validate_setup", return_value=Frames(cfg)),
+                patch.object(deploy, "load_exploration", return_value=np.zeros((1, 5))),
+                patch.object(deploy, "Calibration"),
+                patch.object(deploy.sys.stdin, "isatty", return_value=True),
+                patch("builtins.input", side_effect=AssertionError("Unexpected startup prompt")) as prompt,
+                patch.object(deploy, "open_client", side_effect=RuntimeError("Test connection boundary")) as connect,
+                redirect_stderr(io.StringIO()),
+            ):
+                self.assertEqual(main(["run", "--execute", "--config", str(config),
+                                       "--output", str(Path(folder) / "events.jsonl")]), 2)
+            connect.assert_called_once()
+            prompt.assert_not_called()
 
     def test_nonrigid_transform_rejected(self):
         bad = np.eye(4)
@@ -244,7 +257,7 @@ class DeploymentTests(unittest.TestCase):
 
     def test_start_mismatch_sends_no_commands(self):
         cfg = copy.deepcopy(self.cfg)
-        cfg["initial_tcp_position_m"] = [0.3, 0.2, 0.3]
+        cfg["initial_sdk_position_m"] = [0.3, 0.2, 0.3]
         robot = FakeRobot()
         with self.assertRaisesRegex(StateError, "Manually position"):
             self.run_fake(cfg=cfg, robot=robot)
@@ -295,7 +308,7 @@ class DeploymentTests(unittest.TestCase):
         cfg = json.loads((ROOT / "configs/real_deploy/airbot_deployment.json").read_text())
         policy = OfflinePolicy(path)
         blockers = deployment_blockers(policy, cfg)
-        self.assertTrue(any("Native-frame" in item for item in blockers))
+        self.assertTrue(any("--mode fixed-setup" in item for item in blockers))
         self.assertTrue(any("outside the encoder" in item for item in blockers))
         with patch("scripts.real_deploy.airbot_deploy.open_client") as connect:
             self.assertEqual(main(["run", "--execute"]), 2)

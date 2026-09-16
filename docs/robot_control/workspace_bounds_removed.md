@@ -32,7 +32,7 @@ python -m scripts.real_training explore check \
 ```
 
 此命令连接 SDK 做只读起点检查，不执行运动，也不检查实时力。当前配置仍指向
-`runs/real_training/real_robot/exploration_start_001.json`，不再因旧 X 上限而拒绝它。
+`runs/real_exploration/exploration_start_001.json`，不再因旧 X 上限而拒绝它。
 实际机械臂仍需位于记录起点附近，且现场确认海绵离桌 1 mm、全程无不允许的碰撞。
 
 现场检查与起点核对通过后，在有人监护的桌面终端执行，选择尚不存在的日志文件名：
@@ -41,10 +41,10 @@ python -m scripts.real_training explore check \
 MPLBACKEND=TkAgg python -m scripts.real_training explore run \
   --config configs/real_training/airbot_exploration.json \
   --execute --plot --time-scale 1 \
-  --output runs/real_training/real_robot/exploration_no_xyz_bounds_001.jsonl
+  --output runs/real_exploration/exploration_no_xyz_bounds_001.jsonl
 ```
 
-仍需 `EXPLORE` 确认，检查和约 1 秒软件清零后才开始 4 秒探索，另用 2 秒回撤。
+`--execute` 授权启动，不再等待口令；检查和约 1 秒软件清零后开始 4 秒探索，另用 2 秒回撤。
 回撤后按提示安全支撑并输入 `IDLE`，关闭曲线窗口不停止机械臂。原始数据和清零后
 曲线仍按原规则保存/显示。出现其他错误不要用移除额外保护的方法强行通过。
 

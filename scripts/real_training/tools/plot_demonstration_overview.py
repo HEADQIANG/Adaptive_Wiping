@@ -16,11 +16,20 @@ from matplotlib.ticker import MaxNLocator
 COLORS = ["#0072b2", "#d55e00", "#009e73", "#cc79a7", "#8c6510", "#56b4e9", "#6c4ba5", "#555555"]
 
 
-def load_demos(session):
-    session = session.resolve()
+def load_demos(session, *, allow_partial=False):
+    session = Path(session).resolve()
+    metadata = json.loads((session / "session.json").read_text(encoding="utf-8"))
+    mode = metadata["config"].get("force_recording", "raw")
+    if mode not in ("raw", "software_tared"):
+        raise ValueError("Unknown manual force recording mode")
+    field = "tared_sensor_wrench_si" if mode == "software_tared" else "raw_sensor_wrench_si"
+    manifests = sorted(session.glob("demo_*.json"))
+    count = len(manifests)
+    if (count > 8 or (not allow_partial and count != 8)
+            or [p.name for p in manifests] != [f"demo_{i:02}.json" for i in range(1, count + 1)]):
+        raise ValueError("Expected consecutive accepted demo_01 through demo_08")
     demos, seen = [], set()
-    for number in range(1, 9):
-        manifest = session / f"demo_{number:02}.json"
+    for manifest in manifests:
         record = json.loads(manifest.read_text(encoding="utf-8"))
         path = (session / record["raw_file"]).resolve()
         if path.parent != session or path in seen:
@@ -37,6 +46,17 @@ def load_demos(session):
         rows = [json.loads(line) for line in content.splitlines() if line.strip()]
         if rows[0]["event"] != "start" or rows[-1]["event"] != "finished":
             raise ValueError(f"Incomplete log: {path}")
+        if not rows[-1].get("quality", {}).get("passed"):
+            raise ValueError(f"Timing rejected log: {path}")
+        baseline = None
+        if mode == "software_tared":
+            tare = rows[0].get("tare")
+            if (record.get("force_recording") != mode or rows[0].get("force_recording") != mode
+                    or not isinstance(tare, dict) or record.get("tare") != tare):
+                raise ValueError("Missing or conflicting recorded tare; no raw fallback")
+            baseline = np.asarray(tare["raw_baseline_si"], dtype=float)
+            if baseline.shape != (6,) or not np.isfinite(baseline).all():
+                raise ValueError("Invalid tare baseline")
         start = float(rows[0]["start_perf_s"])
         samples = [r for r in rows if r.get("event") == "sample"]
         pose_t = np.array([r["pose"]["host_monotonic_s"] - start for r in samples])
@@ -49,7 +69,15 @@ def load_demos(session):
         for row in samples:
             force = row["ft"]
             stamp = float(force["sensor_receive_perf_s"])
-            value = np.array(force["raw_sensor_wrench_si"], dtype=float)
+            if field not in force:
+                raise ValueError(f"Missing {field}; no raw fallback")
+            value = np.array(force[field], dtype=float)
+            if baseline is not None:
+                raw = np.asarray(force["raw_sensor_wrench_si"], dtype=float)
+                if (force.get("tare_id") != tare["id"] or raw.shape != (6,)
+                        or value.shape != (6,) or not np.isfinite(raw).all()
+                        or not np.allclose(value, raw - baseline, atol=1e-10, rtol=1e-10)):
+                    raise ValueError("Tared wrench differs from recorded raw value and baseline")
             if stamp in received and not np.array_equal(value, received[stamp]):
                 raise ValueError("Conflicting readings at the same receive timestamp")
             received[stamp] = value
@@ -74,17 +102,20 @@ def load_demos(session):
                 ft=ft,
                 raw_file=path.name,
                 sha256=record["sha256"],
+                force_recording=mode,
+                force_field=field,
+                tare_id=record.get("tare", {}).get("id") if record.get("tare") else None,
             )
         )
     return demos
 
 
-def decorate(fig, title, subtitle):
+def decorate(fig, title, subtitle, count):
     fig.suptitle(title, fontsize=18, y=0.985)
     fig.text(0.5, 0.947, subtitle, ha="center", fontsize=10)
     handles = [
         Line2D([0], [0], color=color, lw=2, label=f"Demo {i:02}")
-        for i, color in enumerate(COLORS, 1)
+        for i, color in enumerate(COLORS[:count], 1)
     ]
     fig.legend(
         handles=handles,
@@ -96,21 +127,27 @@ def decorate(fig, title, subtitle):
     )
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--session",
-        type=Path,
-        default=Path(
-            "archive/real_training/raw_data/manual_demonstrations/session_record_only_002"
-        ),
-    )
-    parser.add_argument(
-        "--output", type=Path, default=Path("runs/real_training/demonstration_overview_002")
-    )
-    args = parser.parse_args()
-    demos = load_demos(args.session)
-    args.output.mkdir(parents=True, exist_ok=True)
+def save_overview(session, output=None, *, allow_partial=False):
+    """Export only accepted records; reserve a fresh directory, never replace plots."""
+    from scripts.shared.paths import writable_path
+
+    session = Path(session).resolve()
+    demos = load_demos(session, allow_partial=allow_partial)
+    if not demos:
+        return None
+    if output is None:
+        index = 1
+        while True:
+            output = writable_path(session / ("plots" if index == 1 else f"plots_{index:03}"))
+            try:
+                output.mkdir()
+                break
+            except FileExistsError:
+                index += 1
+    else:
+        output = writable_path(output)
+        output.mkdir(parents=True, exist_ok=False)
+    count = len(demos)
     fig = plt.figure(figsize=(16, 10))
     axes = [fig.add_subplot(2, 3, 1, projection="3d")]
     axes += [fig.add_subplot(2, 3, i) for i in range(2, 7)]
@@ -148,8 +185,9 @@ def main():
         ax.spines[["top", "right"]].set_visible(False)
     decorate(
         fig,
-        "Eight accepted demonstrations: trajectory overview",
-        "SDK end position, not calibrated sponge TCP | Absolute coordinates | Circle: start; cross: end",
+        f"{count}/8 accepted demonstrations: trajectory overview",
+        "SDK end position | Absolute coordinates | Circle: start; cross: end",
+        count,
     )
     fig.text(
         0.5,
@@ -159,8 +197,10 @@ def main():
         fontsize=10,
     )
     fig.tight_layout(rect=(0, 0.04, 1, 0.87), w_pad=2.5, h_pad=2.5)
-    fig.savefig(args.output / "trajectories.png", dpi=160)
-    plt.close(fig)
+    try:
+        fig.savefig(output / "trajectories.png", dpi=160)
+    finally:
+        plt.close(fig)
 
     fig, axes = plt.subplots(3, 2, figsize=(15, 10), sharex=True)
     channels = ["Fx", "Fy", "Fz", "Tx", "Ty", "Tz"]
@@ -175,8 +215,11 @@ def main():
         ax.set_xlabel("Sensor host receive time relative to demo start (s)")
     decorate(
         fig,
-        "Eight accepted demonstrations: six-axis force / torque",
-        "Raw, unfiltered | Sensor-local axes at sensor origin | Gravity and electronic bias retained",
+        f"{count}/8 accepted demonstrations: six-axis force / torque",
+        ("Software-tared, unfiltered | Sensor-local axes | Fixed-pose baseline, not gravity compensation"
+         if demos[0]["force_recording"] == "software_tared" else
+         "Raw, unfiltered | Sensor-local axes at sensor origin | Gravity and electronic bias retained"),
+        count,
     )
     fig.text(
         0.5,
@@ -186,15 +229,22 @@ def main():
         fontsize=10,
     )
     fig.tight_layout(rect=(0, 0.04, 1, 0.87), h_pad=1.8)
-    fig.savefig(args.output / "force_torque.png", dpi=160)
-    plt.close(fig)
+    try:
+        fig.savefig(output / "force_torque.png", dpi=160)
+    finally:
+        plt.close(fig)
     report = {
-        "session": str(args.session),
+        "session": str(session),
+        "accepted": count,
+        "complete": count == 8,
+        "force_recording": demos[0]["force_recording"],
+        "force_field": demos[0]["force_field"],
         "demonstrations": [
             {
                 "name": d["name"],
                 "raw_file": d["raw_file"],
                 "sha256": d["sha256"],
+                "tare_id": d["tare_id"],
                 "pose_samples": len(d["pose_t"]),
                 "unique_ft_samples": len(d["ft_t"]),
                 "pose_time_range_s": [float(d["pose_t"][0]), float(d["pose_t"][-1])],
@@ -205,8 +255,28 @@ def main():
             for d in demos
         ],
     }
-    (args.output / "summary.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(report, indent=2))
+    with (output / "summary.json").open("x", encoding="utf-8") as stream:
+        stream.write(json.dumps(report, indent=2) + "\n")
+    print(f"Saved {count}/8 accepted demonstration plots: {output}", flush=True)
+    return output
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--session", type=Path)
+    parser.add_argument("--output", type=Path,
+                        help="new output directory (default: session/plots, with collision suffix)")
+    parser.add_argument("--allow-partial", action="store_true", help="plot fewer than 8 accepted records")
+    args = parser.parse_args(argv)
+    output = args.output
+    if args.session is None:
+        args.session = Path("archive/real_training/raw_data/manual_demonstrations/session_record_only_002")
+        output = output or Path("runs/real_demonstrations/analysis/demonstration_overview_002")
+    if output is not None:
+        from scripts.shared.run_paths import new_output
+
+        output = new_output(output)
+    save_overview(args.session, output, allow_partial=args.allow_partial)
 
 
 if __name__ == "__main__":

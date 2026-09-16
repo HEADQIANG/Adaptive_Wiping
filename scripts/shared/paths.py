@@ -6,6 +6,8 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 
+from scripts.shared.run_layout import relocated_run_path
+
 ROOT = Path(__file__).resolve().parents[2]
 ARCHIVE = ROOT / "archive"
 RUNS = ROOT / "runs"
@@ -68,6 +70,9 @@ def read_path(value, *, historical=False, source_sha256=None):
     source_sha256 selects an exact historical version when paths were reused.
     """
     path = project_path(value)
+    moved = relocated_run_path(path, ROOT)
+    if moved != path:
+        return moved
     try:
         key = path.relative_to(ROOT).as_posix()
     except ValueError:
@@ -101,13 +106,23 @@ def read_path(value, *, historical=False, source_sha256=None):
 
 def writable_path(value):
     original = project_path(value).absolute()
-    path = original.resolve()
+    path = relocated_run_path(original, ROOT).resolve()
     if path.is_relative_to(ARCHIVE.resolve()) or any(
         original.is_relative_to(ROOT / name)
         for name in ("outputs", "data", "logs", "DISCOVERSE", "adaptive_wiping", "robosuite")
     ):
         raise PermissionError("Historical paths are read-only; use runs/<category>/<new-run>.")
     return path
+
+
+def recorded_source_hash(hashes, value):
+    """Look up a binding by resolved identity, retaining every original hash check."""
+    target = read_path(value).resolve()
+    matches = {expected for source, expected in hashes.items()
+               if read_path(source).resolve() == target}
+    if len(matches) > 1:
+        raise ValueError(f"Conflicting recorded hashes for relocated source: {value}")
+    return next(iter(matches), None)
 
 
 def protect_archive():

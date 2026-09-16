@@ -342,8 +342,11 @@ def main():
         "--dataset-config",
         default="archive/sim_pretrain/two_control_pretraining_v2/normal/config.json",
     )
-    parser.add_argument("--output", default="runs/sim_pretrain/sponge_vae_repair_v1")
+    parser.add_argument("--output", default="runs/sim_training/sponge_vae_repair_v1")
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     return 0 if run(args.dataset_config, args.output) else 2
 
 

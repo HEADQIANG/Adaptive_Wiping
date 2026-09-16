@@ -1,7 +1,13 @@
 # 改为 1200 条并训练
 
+2026-09-16 目录整理后，已训练模型在 `runs/sim_training/pretrain_wide_1200_v1/`，
+1200 条数据在 `runs/sim_data/pretrain_wide_1200_v1/`，训练目录以链接访问数据。
+复核现有模型使用该训练目录中的 `run_config.json`，新训练使用下文模板和程序打印的快照。
+下文是当时的采集过程；2000 条来源目录在本次整理前已不存在，不能直接重跑子集提取。
+现有 1200 条数据完整，不依赖那个源目录才能读取。
+
 本次用户将原 2000 条计划缩减为总计 1200 条。原任务达到 1200 条后停止，
-保留源目录 `runs/sim_pretrain/pretrain_wide_2000_v1`，不删除原始数据。
+保留源目录 `runs/sim_training/pretrain_wide_2000_v1`，不删除原始数据。
 取源数据按原划分/索引顺序的前 1200 条完整有限记录，再以 seed=20260912
 随机打乱并划分为 train=960、validation=120、test=120，无交叉重复。
 它们是原分层随机分配的子集，不宣称重新构造了 1200 点完整分层采样。
@@ -20,7 +26,7 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
   --config configs/sim_pretrain/pretrain_wide_1200.yaml
 ```
 
-新输出目录 `runs/sim_pretrain/pretrain_wide_1200_v1`。
+新输出目录 `runs/sim_training/pretrain_wide_1200_v1`。
 命令验证源数据并复制原始轨迹，不重新仿真，不修改原目录的数据。
 `source_mapping.json`、HDF5 source_split/source_index 和源 SHA256 记录逐条来源。
 已生成数据再次执行时核对哈希，不重新划分；中断训练从每 200 轮的恢复点继续。

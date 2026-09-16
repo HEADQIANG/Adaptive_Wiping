@@ -9,4 +9,5 @@ __pycache__/
 !.env.example
 logs/
 runs/
+/.runs_cleanup/
 /archive/

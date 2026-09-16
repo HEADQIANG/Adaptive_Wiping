@@ -28,7 +28,7 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
   /home/wp/miniconda3/envs/clean/bin/python -m scripts.sim_pretrain.experiments.repair_sponge_vae \
   --dataset-config archive/sim_pretrain/two_control_pretraining_v2/normal/config.json \
-  --output runs/sim_pretrain/sponge_vae_repair_v1
+  --output runs/sim_training/sponge_vae_repair_v1
 ```
 
 Output must not already exist; failed/interrupted runs are retained. There is no
@@ -146,7 +146,7 @@ improvement**. Do not promote this policy or claim that all model issues are fix
 With identical sponge embeddings across all eight demos, a deterministic
 sponge-only XY network necessarily predicts one shared trajectory. No encoder
 repair can distinguish those demonstrations without additional varying inputs.
-The real embedding remains OOD; coordinate alignment and the runs/sim_pretrain/model contract
+The real embedding remains OOD; coordinate alignment and the runs/sim_training/model contract
 must be resolved before claiming physical adaptation. No inference-time clipping,
 undocumented recentering, new calibration flags or automatic policy replacement
 has been applied. The old model and its outputs remain available.

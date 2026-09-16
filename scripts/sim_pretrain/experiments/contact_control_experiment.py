@@ -269,6 +269,9 @@ def main():
     parser.add_argument("--candidate", choices=["all", "baseline", *CANDIDATES], default="all")
     parser.add_argument("--gif", action="store_true")
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=False)
     cfg = load_config(args.config)

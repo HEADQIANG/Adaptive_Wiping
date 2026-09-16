@@ -108,6 +108,9 @@ def main():
     )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     if args.output.exists():
         raise FileExistsError(args.output)
     dh, end = read_dh(args.startup_log)

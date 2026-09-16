@@ -83,9 +83,18 @@ def assemble_padded(exploration, session, *, subtract_recorded_baseline=False):
     if len(records) != 8:
         raise ValueError("Exactly eight accepted program demonstrations are required")
     exp, exp_report, header = exploration_episode(exploration)
-    for key in ("robot_sn", "sensor_port", "initial_pose_sha256", "table_normal_sdk", "slide_direction_sdk"):
-        if not cfg.get(key) or cfg[key] != header["config"].get(key):
-            raise ValueError(f"Exploration/program setup mismatch: {key}")
+    if header.get("mode") == "manual-start":
+        from scripts.real_training.manual_exploration_contract import verify_binding
+
+        if not subtract_recorded_baseline:
+            raise ValueError("Manual exploration training requires explicit recorded-baseline subtraction")
+        verify_binding(frozen.get("exploration_binding"), header, hashes[str(exploration)], cfg)
+    else:
+        if frozen.get("exploration_binding"):
+            raise ValueError("Bound manual session cannot be paired with a legacy exploration")
+        for key in ("robot_sn", "sensor_port", "initial_pose_sha256", "table_normal_sdk", "slide_direction_sdk"):
+            if not cfg.get(key) or cfg[key] != header["config"].get(key):
+                raise ValueError(f"Exploration/program setup mismatch: {key}")
     demos, reports = {}, {}
     for i, record in enumerate(records, 1):
         path = session / record["raw_file"]
@@ -98,6 +107,10 @@ def assemble_padded(exploration, session, *, subtract_recorded_baseline=False):
                 contains_derived_samples=True, padding_method="hold_last_effective_wipe_state",
                 padding_semantics="synthetic tail from measured endpoint; not observed 10s behavior",
                 force_feedback_enabled=False, paper_equivalent_collection=False)
+    if frozen.get("exploration_binding"):
+        meta["exploration_binding"] = frozen["exploration_binding"]
+        meta["exploration_stationary_validated"] = False
+        meta["exploration_force_limits_enforced"] = False
     if subtract_recorded_baseline:
         exp_events = events(exploration)
         tares = [r for r in exp_events if r["event"] == "tare_complete"]

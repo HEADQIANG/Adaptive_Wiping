@@ -1,4 +1,4 @@
-"""Convert measured AIRBOT recordings with supplied physical calibration; no robot I/O."""
+"""Convert AIRBOT sensor wrenches without changing SDK poses; no robot I/O."""
 
 import argparse
 import copy
@@ -45,14 +45,6 @@ def convert_episode(episode, calibration, *, demo):
         ft_hz=100.0,
         ft_rate_semantics="causal_processing_grid_not_independent_sensor_rate",
     )
-    if demo:
-        positions, orientations = [], []
-        for p, q in zip(episode["sdk_end_position"], episode["sdk_end_quaternion"]):
-            positions.append(
-                calibration.frames.to_tcp({"sdk_end_position_m": p, "sdk_end_orientation_xyzw": q})
-            )
-            orientations.append(calibration.frames.tcp_quaternion(q))
-        out.update(tcp_position=np.asarray(positions), tcp_quaternion=np.asarray(orientations))
     return out
 
 
@@ -65,8 +57,8 @@ def _publish(source, target):
 
 
 def convert_training(cfg, calibration_path, exploration, session, *, audit_only=False):
-    if cfg["profile"] != "paper_downstream":
-        raise ValueError("Calibrated conversion requires the paper_downstream training profile")
+    if cfg["profile"] != "airbot_sensor_calibrated_offline":
+        raise ValueError("Sensor conversion requires the airbot_sensor_calibrated_offline profile")
     calibration = Calibration(calibration_path)
     target = resolve(cfg["raw_data"])
     report_path = target.with_suffix(".import.json")
@@ -103,7 +95,7 @@ def convert_training(cfg, calibration_path, exploration, session, *, audit_only=
         meta.update(
             calibration.metadata(),
             sampling=sampling,
-            conversion="measured_frames_then_causal_100hz_hold_v1",
+            conversion="sensor_frames_sdk_pose_causal_100hz_hold_v2",
         )
         meta.pop("resampling", None)
         meta["source_hashes"].update(
@@ -224,14 +216,23 @@ def main(argv=None):
                 "calibration_sha256": record.sha256,
             }
         elif args.action == "training":
+            from scripts.shared.run_paths import new_run_config
+
+            cfg = load_config(args.config)
+            if not args.audit_only:
+                cfg = new_run_config(cfg, include_raw=True)
             result = convert_training(
-                load_config(args.config),
+                cfg,
                 args.calibration,
                 args.exploration,
                 args.session,
                 audit_only=args.audit_only,
             )
         else:
+            if not args.audit_only:
+                from scripts.shared.run_paths import new_output
+
+                args.output = new_output(args.output)
             result = convert_exploration(
                 args.calibration, args.exploration, args.output, audit_only=args.audit_only
             )

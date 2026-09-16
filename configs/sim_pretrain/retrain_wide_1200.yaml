@@ -1,0 +1,21 @@
+schema_version: 1
+source_run: runs/sim_training/pretrain_wide_1200_v1
+output_dir: runs/sim_training/retrain_wide_1200
+training:
+  epochs: 400
+  deterministic_warmup_epochs: 50
+  kl_ramp_epochs: 100
+  beta_candidates: [0.00001, 0.00003, 0.0001]
+  selection_seed: 42
+  repeat_seeds: [43, 44]
+  batch_size: 32
+  learning_rate: 0.0001
+  final_learning_rate: 0.00001
+  dropout: 0.0
+  device: cpu
+  threads: 1
+  checkpoint_every: 50
+acceptance:
+  reconstruction_fraction: 0.8
+  latent_ablation_ratio: 1.1
+  required_passing_seeds: 3

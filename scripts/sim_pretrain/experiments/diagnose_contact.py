@@ -335,9 +335,12 @@ def plots(out, traces):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=str(ROOT / "configs/sim_pretrain/pretrain_paper.yaml"))
-    parser.add_argument("--output", default=str(ROOT / "runs/sim_pretrain/contact_diagnosis"))
+    parser.add_argument("--output", default=str(ROOT / "runs/sim_data/contact_diagnosis"))
     parser.add_argument("--gain", type=float, default=300)
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     cfg = load_config(args.config)
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=False)

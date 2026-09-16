@@ -23,7 +23,7 @@ from scripts.real_training.airbot_calibrated_data import (
     convert_training,
 )
 from scripts.real_training.config import load_config
-from scripts.real_training.data import _load_raw, inspect
+from scripts.real_training.data import PROTOCOL, _load_raw, inspect
 from scripts.shared.airbot_calibration import (
     FRAME_KEYS,
     Calibration,
@@ -46,15 +46,11 @@ class CalibrationTests(unittest.TestCase):
         )
         self.record.update(
             calibration_id="UNIT_TEST_ONLY_not_physical_calibration",
-            tcp_definition="UNIT_TEST_ONLY_numeric_TCP",
             method_notes="Synthetic test fixture",
             evidence=[{"path": self.evidence.name, "sha256": file_digest(self.evidence)}],
         )
         self.record["verification"] = {key: True for key in self.record["verification"]}
-        for key in FRAME_KEYS[:3]:
-            self.record[key] = np.eye(4).tolist()
-        self.record["base_from_sdk"][0][3] = 0.002
-        self.record["end_from_tcp"][2][3] = 0.015
+        self.record["sensor_to_ft_frame"] = np.eye(4).tolist()
         self.record["sensor_to_ft_frame"][0][3] = 0.01
         self.record["sensor_bias_si"] = [1.0, 2.0, 3.0, 0.1, 0.2, 0.3]
         write_json(self.path, self.record)
@@ -62,7 +58,25 @@ class CalibrationTests(unittest.TestCase):
     def calibration(self):
         return Calibration(self.path)
 
+    def test_sensor_contract_does_not_require_or_transform_robot_pose(self):
+        cal = self.calibration()
+        self.assertEqual(set(FRAME_KEYS), {"sensor_to_ft_frame", "sensor_bias_si"})
+        self.assertNotIn("tcp_definition", cal.metadata())
+        self.assertEqual(cal.metadata()["position_frame"], "SDK configured reference")
+        self.assertFalse(hasattr(cal.frames, "to_tcp"))
+        self.assertFalse(hasattr(cal.frames, "to_end"))
+
+    def test_old_pose_calibration_schema_is_not_reinterpreted_as_sensor_only(self):
+        self.record.update(schema_version=1, artifact_kind="airbot_physical_calibration")
+        write_json(self.path, self.record)
+        with self.assertRaisesRegex(ValueError, "schema_version"):
+            self.calibration()
+
     def require_collection(self):
+        # Archive integration fixtures retain their original 10 mm/s protocol.
+        protocol = patch.dict(PROTOCOL, press_speed_m_s=0.01)
+        protocol.start()
+        self.addCleanup(protocol.stop)
         exp = ROOT / "archive/real_training/real_robot/exploration_ft_007.jsonl"
         session = (
             ROOT / "archive/real_training/raw_data/manual_demonstrations/session_record_only_002"
@@ -107,37 +121,20 @@ class CalibrationTests(unittest.TestCase):
             write_json(self.path, record)
             with self.assertRaises(ValueError):
                 self.calibration()
-        self.record["base_from_sdk"][0][0] = -1
+        self.record["sensor_to_ft_frame"][0][0] = -1
         write_json(self.path, self.record)
         with self.assertRaisesRegex(ValueError, "right-handed"):
             self.calibration()
 
-    def test_pose_orientation_composition_and_wrench_shift(self):
-        self.record["base_from_sdk"] = np.eye(4).tolist()
-        self.record["base_from_sdk"][:3] = np.c_[
-            Rotation.from_euler("z", 30, degrees=True).as_matrix(), [0, 0, 0]
-        ].tolist()
-        self.record["end_from_tcp"][:3] = np.c_[
-            Rotation.from_euler("x", 20, degrees=True).as_matrix(), [0, 0, 0.015]
+    def test_sensor_rotation_and_wrench_shift_without_pose_calibration(self):
+        self.record["sensor_to_ft_frame"][:3] = np.c_[
+            Rotation.from_euler("z", 90, degrees=True).as_matrix(), [0.01, 0, 0]
         ].tolist()
         write_json(self.path, self.record)
         cal = self.calibration()
-        q = Rotation.from_euler("y", 15, degrees=True).as_quat()
-        expected = (
-            Rotation.from_euler("z", 30, degrees=True)
-            * Rotation.from_quat(q)
-            * Rotation.from_euler("x", 20, degrees=True)
-        )
         np.testing.assert_allclose(
-            Rotation.from_quat(cal.frames.tcp_quaternion(q)).as_matrix(),
-            expected.as_matrix(),
-            atol=1e-12,
+            cal.frames.wrench([3, 2, 3, 0.1, 0.2, 0.3]), [0, 2, 0, 0, 0, 0.02], atol=1e-12
         )
-        np.testing.assert_allclose(
-            cal.frames.wrench([1, 4, 3, 0.1, 0.2, 0.3]), [0, 2, 0, 0, 0, 0.02], atol=1e-12
-        )
-        with self.assertRaisesRegex(ValueError, "unit SDK"):
-            cal.frames.tcp_quaternion([0, 0, 0, 2])
 
     def test_received_hold_is_causal_and_rejects_gaps(self):
         times = np.arange(-1, 227) * 0.018
@@ -170,7 +167,9 @@ class CalibrationTests(unittest.TestCase):
         np.testing.assert_array_equal(out["received_ft_time"], time)
         np.testing.assert_array_equal(episode["ft"], raw)
         np.testing.assert_allclose(out["ft"][0], [0, 2, 0, 0, 0, 0.02], atol=1e-12)
-        np.testing.assert_allclose(out["tcp_position"][0], [0.102, 0.2, 0.315], atol=1e-12)
+        np.testing.assert_array_equal(out["sdk_end_position"], episode["sdk_end_position"])
+        np.testing.assert_array_equal(out["sdk_end_quaternion"], episode["sdk_end_quaternion"])
+        self.assertNotIn("tcp_position", out)
 
     def test_deployment_rejects_all_frame_and_bias_overrides(self):
         cal = self.calibration()
@@ -204,6 +203,8 @@ class CalibrationTests(unittest.TestCase):
         self.assertEqual(info["metadata"]["calibration_sha256"], file_digest(self.path))
         with h5py.File(cfg["raw_data"], "r") as h5:
             demo = h5["demonstrations/demo_01"]
+            self.assertNotIn("tcp_position", demo)
+            self.assertIn("sdk_end_position", demo)
             self.assertEqual(demo["ft"].shape[0], 1001)
             self.assertEqual(demo["received_sensor_ft"].shape[0], 570)
             self.assertTrue(50 < demo.attrs["received_ft_hz"] < 60)
@@ -271,7 +272,7 @@ class CalibrationTests(unittest.TestCase):
         ):
             report = replay(cfg, self.root / "replay")
         self.assertEqual(report["max_stream_vs_batch_error_m"], 0)
-        self.assertEqual(report["position_frame"], "base_link")
+        self.assertEqual(report["position_frame"], "SDK configured reference")
         self.assertEqual(report["calibration_sha256"], file_digest(self.path))
 
     def test_calibrated_deployment_setup_positive_and_rate_mismatch(self):
@@ -291,7 +292,7 @@ class CalibrationTests(unittest.TestCase):
             joint_current_limits=[1] * 6,
             joint_speed_limit_rad_s=0.1,
             measured_joint_speed_stop_rad_s=0.2,
-            initial_tcp_position_m=[0.1, 0.2, 0.3],
+            initial_sdk_position_m=[0.1, 0.2, 0.3],
             sdk_end_orientation_xyzw=[0, 0, 0, 1],
         )
         for key in (
@@ -319,7 +320,7 @@ class CalibrationTests(unittest.TestCase):
             metadata={
                 "data": {"metadata": cal.metadata()},
                 "bindings": {"prepared_sha256": file_digest(prepared)},
-                "training_contract": {"profile": "paper_downstream"},
+                "training_contract": {"profile": "airbot_sensor_calibrated_offline"},
             },
         )
         frames = validate_setup(policy, cfg)

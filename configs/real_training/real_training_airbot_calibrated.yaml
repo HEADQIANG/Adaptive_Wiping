@@ -1,5 +1,5 @@
 schema_version: 1
-profile: paper_downstream
+profile: airbot_sensor_calibrated_offline
 raw_data: runs/real_training/airbot_calibrated_v1/calibrated_resampled.h5
 encoder: archive/sim_pretrain/two_control_pretraining_v2/normal/encoder.pt
 output_dir: runs/real_training/real_training_airbot_calibrated_v1

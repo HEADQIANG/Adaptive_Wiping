@@ -1,7 +1,7 @@
 schema_version: 1
 profile: airbot_native_tared_offline
 raw_data: runs/real_training/programmed_hold_last_tared_004/raw.h5
-encoder: runs/sim_pretrain/pretrain_wide_1200_v1/encoder.pt
+encoder: runs/sim_training/pretrain_wide_1200_v1/encoder.pt
 output_dir: runs/real_training/training_programmed_wide1200_v1
 wrench:
   frame: sensor local

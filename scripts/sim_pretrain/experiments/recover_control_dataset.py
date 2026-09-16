@@ -90,7 +90,9 @@ def recover(out, mode, base_cfg):
     from scripts.shared.paths import read_path
 
     folder = read_path(cfg["output_dir"])
-    path = folder / "dataset.h5"
+    from scripts.shared.run_layout import sim_data_path
+
+    path = sim_data_path(folder, "dataset.h5")
     with (folder / ".collection.lock").open("a+") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         recovery = Path(tempfile.mkdtemp(prefix="recovery-", dir=folder))
@@ -116,7 +118,7 @@ def recover(out, mode, base_cfg):
         # The old file stays recoverable, and replacement happens only after all checks.
         assert file_digest(path) == original_hash
         candidate.replace(path)
-        write_json(folder / "collection.json", progress)
+        write_json(sim_data_path(folder, "collection.json"), progress)
     print(json.dumps(report, indent=2), flush=True)
     return report
 

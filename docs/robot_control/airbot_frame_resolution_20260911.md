@@ -89,7 +89,7 @@ are NumPy, SciPy and python3-pykdl. The script imports no robot or serial SDK.
 ```bash
 python3 -m scripts.robot_control.tools.audit_airbot_model_chain \
   --startup-log /home/wp/.codex/attachments/8ac96f64-5ca8-4f09-8b83-3489f1c5f2fd/pasted-text.txt \
-  --output runs/robot_control/airbot_model_chain_audit_20260911_v2.json
+  --output runs/real_deploy/robot_control/airbot_model_chain_audit_20260911_v2.json
 python3 -m unittest discover -s tests -p 'test_airbot_model_chain.py' -v
 python3 -m unittest discover -s tests -p 'test_airbot_frame_audit.py' -v
 ```

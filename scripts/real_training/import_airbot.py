@@ -53,12 +53,18 @@ def stream_report(time):
 
 def exploration_episode(path):
     rows = events(path)
+    if not rows:
+        raise ValueError("Empty exploration log")
     header = rows[0]
+    if header.get("mode") == "manual-start":
+        from scripts.real_training.manual_exploration_contract import validate
+
+        validate(rows)
     done = [r for r in rows if r["event"] == "motion_complete"]
     samples = [r for r in rows if r["event"] == "sample" and r["phase"] == "exploration"]
     if (
         header.get("source_kind") != "real"
-        or header.get("mode") != "force-guarded"
+        or header.get("mode") not in ("force-guarded", "manual-start")
         or rows[-1] != {"event": "session_complete", "idle_confirmed": True}
         or len(done) != 1
         or done[0].get("nominal_protocol_match") is not True
@@ -93,7 +99,7 @@ def exploration_episode(path):
     report = stream_report(time)
     episode = {
         "attrs": {
-            "sponge_id": "normal",
+            "sponge_id": header.get("config", {}).get("sponge_id", "normal"),
             "complete": True,
             "start_time": start,
             "ft_hz": report["median_received_hz"],
@@ -104,12 +110,17 @@ def exploration_episode(path):
     return episode, {**report, "completion": done[0]}, header
 
 
-def assemble(exploration, session, *, programmed_hold_last=False, subtract_recorded_baseline=False):
+def assemble(exploration, session, *, programmed_hold_last=False, subtract_recorded_baseline=False,
+             manual_tared=False, confirm_same_setup=False):
+    if manual_tared and (programmed_hold_last or not subtract_recorded_baseline or not confirm_same_setup):
+        raise ValueError("Manual tared import requires baseline subtraction and same-setup confirmation, without padding")
+    if confirm_same_setup and not manual_tared:
+        raise ValueError("Same-setup confirmation is only supported with --manual-tared")
     if programmed_hold_last:
         from scripts.real_training.programmed_padding import assemble_padded
 
         return assemble_padded(exploration, session, subtract_recorded_baseline=subtract_recorded_baseline)
-    if subtract_recorded_baseline:
+    if subtract_recorded_baseline and not manual_tared:
         raise ValueError("Recorded baseline conversion requires --programmed-hold-last")
     exploration, session = Path(exploration).resolve(), Path(session).resolve()
     session_path = session / "session.json"
@@ -123,8 +134,19 @@ def assemble(exploration, session, *, programmed_hold_last=False, subtract_recor
             "use --programmed-hold-last for an explicitly labeled derived copy; originals must remain unchanged"
         )
     cfg = metadata["config"]
+    if cfg.get("force_recording") == "software_tared" and not manual_tared:
+        raise ValueError(
+            "Software-tared manual demonstrations require a matching tared training input contract; "
+            "this raw-load importer cannot silently discard the recorded tare"
+        )
     hashes = {str(p): file_digest(p) for p in (exploration, session_path)}
     exp, exp_report, header = exploration_episode(exploration)
+    if manual_tared:
+        from scripts.real_training.manual_tared_import import validate_setup, validate_tare, apply_baselines
+
+        validate_setup(metadata, header)
+    elif header.get("mode") == "manual-start":
+        raise ValueError("Manual exploration requires newly bound programmed demonstrations and explicit tared hold-last import")
     if cfg["robot_sn"] != header["config"]["robot_sn"]:
         raise ValueError("Exploration and demonstrations belong to different robots")
     if cfg["sensor_port"] != header["config"]["sensor_port"]:
@@ -132,7 +154,7 @@ def assemble(exploration, session, *, programmed_hold_last=False, subtract_recor
     manifests = sorted(session.glob("demo_*.json"))
     if [p.name for p in manifests] != [f"demo_{i:02}.json" for i in range(1, 9)]:
         raise ValueError("Expected exactly demo_01 through demo_08")
-    demos, reports, paths = {}, {}, set()
+    demos, reports, paths, biases = {}, {}, set(), {}
     for manifest in manifests:
         record = json.loads(manifest.read_text())
         path = (session / record["raw_file"]).resolve()
@@ -149,6 +171,8 @@ def assemble(exploration, session, *, programmed_hold_last=False, subtract_recor
         rows = events(path)
         if rows[0]["event"] != "start" or rows[-1]["event"] != "finished":
             raise ValueError("Incomplete demonstration")
+        if manual_tared:
+            biases[manifest.stem] = validate_tare(session, path, rows, record, hashes)
         start = rows[0]["start_perf_s"]
         samples = [r for r in rows if r["event"] == "sample"]
         checked = quality(samples, start)
@@ -181,6 +205,8 @@ def assemble(exploration, session, *, programmed_hold_last=False, subtract_recor
         reports[manifest.stem] = {**report, "quality": checked, "raw_file": str(path)}
         hashes.update({str(manifest): file_digest(manifest), str(path): record["sha256"]})
     meta = import_metadata(cfg, hashes, exp_report, reports)
+    if manual_tared:
+        apply_baselines(meta, exp, demos, biases, events(exploration), cfg, exploration, session_path)
     for path, expected in hashes.items():
         if file_digest(path) != expected:
             raise ValueError("Source changed during import")
@@ -193,7 +219,7 @@ def import_metadata(cfg, hashes, exp_report, reports):
         "sensor_id": cfg["sensor_port"],
         "calibration_id": "unverified_not_a_calibration",
         "calibration_status": "unverified",
-        "tcp_definition": "SDK configured end frame; sponge TCP uncalibrated",
+        "position_definition": "SDK configured end frame",
         "sensor_frame": "KWR75 sensor native axes",
         "position_frame": "SDK configured reference",
         "position_units": "m",
@@ -213,7 +239,7 @@ def import_metadata(cfg, hashes, exp_report, reports):
 
 
 def import_dataset(cfg, exploration, session, *, audit_only=False, programmed_hold_last=False,
-                   subtract_recorded_baseline=False):
+                   subtract_recorded_baseline=False, manual_tared=False, confirm_same_setup=False):
     if not native_profile(cfg):
         raise ValueError(
             "This importer requires airbot_native_offline; it cannot certify calibration"
@@ -221,7 +247,8 @@ def import_dataset(cfg, exploration, session, *, audit_only=False, programmed_ho
     if subtract_recorded_baseline != (cfg["profile"] == "airbot_native_tared_offline"):
         raise ValueError("Tared profile requires explicit --subtract-recorded-baseline; raw profiles forbid it")
     meta, exp, demos = assemble(exploration, session, programmed_hold_last=programmed_hold_last,
-                                subtract_recorded_baseline=subtract_recorded_baseline)
+                                subtract_recorded_baseline=subtract_recorded_baseline,
+                                manual_tared=manual_tared, confirm_same_setup=confirm_same_setup)
     target = resolve(cfg["raw_data"])
     if not audit_only and target.exists():
         raise FileExistsError(target)
@@ -234,6 +261,7 @@ def import_dataset(cfg, exploration, session, *, audit_only=False, programmed_ho
             "hardware_ready": False,
             "profile": cfg["profile"],
             "derivation": meta.get("derivation"),
+            "setup_confirmation": meta.get("setup_confirmation"),
             "source_hashes": meta["source_hashes"],
             "collection": meta["collection_report"],
             "warnings": info["warnings"],
@@ -267,11 +295,22 @@ def main(argv=None):
                         help="Explicitly derive 10s programmed episodes by holding final wipe state; originals unchanged")
     parser.add_argument("--subtract-recorded-baseline", action="store_true",
                         help="Use recorded unloaded baselines for the new tared-native offline profile")
+    parser.add_argument("--manual-tared", action="store_true",
+                        help="Import measured 10s software-tared manual demonstrations without padding")
+    parser.add_argument("--confirm-same-setup", action="store_true",
+                        help="Confirm same sponge, tool/sensor mounting and table setup after collection; manual tared only")
     args = parser.parse_args(argv)
+    from scripts.shared.run_paths import new_run_config
+
+    cfg = load_config(args.config)
+    if not args.audit_only:
+        cfg = new_run_config(cfg, include_raw=True)
     result = import_dataset(
-        load_config(args.config), args.exploration, args.session, audit_only=args.audit_only,
+        cfg, args.exploration, args.session, audit_only=args.audit_only,
         programmed_hold_last=args.programmed_hold_last,
         subtract_recorded_baseline=args.subtract_recorded_baseline,
+        manual_tared=args.manual_tared,
+        confirm_same_setup=args.confirm_same_setup,
     )
     print(json.dumps(result, indent=2, allow_nan=False))
 

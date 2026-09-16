@@ -1,0 +1,3 @@
+[submodule "robosuite"]
+	path = scripts/sim_pretrain/robosuite
+	url = https://github.com/ARISE-Initiative/robosuite.git

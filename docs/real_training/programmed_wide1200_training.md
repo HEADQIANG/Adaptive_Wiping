@@ -1,6 +1,10 @@
 # 新预训练模型的高度与轨迹训练
 
-本次使用新完成的 `runs/sim_pretrain/pretrain_wide_1200_v1/vae_last.pt`（第 1000 轮），
+2026-09-15：下文是已有实验，保持原样。新的 manual-start 探索只能配采集前已绑定它的
+新程序示教，并使用独立数据/训练输出；命令见 [手动起点探索与训练](manual_start_exploration.md)。
+本实验已经使用去基线数据，不是原始载荷训练。
+
+本次使用新完成的 `runs/sim_training/pretrain_wide_1200_v1/vae_last.pt`（第 1000 轮），
 按现有导出流程生成并冻结 `encoder.pt`，不使用旧归档编码器，也不使用未经本轮最终测试评估的
 `vae_best.pt`（第 997 轮）。`pretrain_wide_2000_v1` 是提前结束采集的来源，不是已完成的模型。
 输入来源为 8 条末状态保持至 10 秒的独立派生数据。本次为了匹配新仿真输入，另生成
@@ -42,7 +46,7 @@ AIRBOT 坐标和传感器尚未完成仿真坐标标定。配置使用独立的 
 
 ```bash
 env -u PYTHONPATH /home/wp/miniconda3/envs/clean/bin/python -m scripts.sim_pretrain export \
-  --config configs/sim_pretrain/pretrain_wide_1200.yaml
+  --config runs/sim_training/pretrain_wide_1200_v1/run_config.json
 ```
 
 生成去基线副本（新数据目录只导入一次）：
@@ -50,8 +54,8 @@ env -u PYTHONPATH /home/wp/miniconda3/envs/clean/bin/python -m scripts.sim_pretr
 ```bash
 env -u PYTHONPATH /home/wp/miniconda3/envs/clean/bin/python -m scripts.real_training import-airbot \
   --config configs/real_training/real_training_programmed_wide1200.yaml \
-  --exploration runs/real_training/real_robot/exploration_tared_plot_003.jsonl \
-  --session runs/real_training/programmed_demonstrations/direct_start_session_004 \
+  --exploration runs/real_exploration/exploration_tared_plot_003.jsonl \
+  --session runs/real_demonstrations/programmed/direct_start_session_004 \
   --programmed-hold-last --subtract-recorded-baseline
 ```
 

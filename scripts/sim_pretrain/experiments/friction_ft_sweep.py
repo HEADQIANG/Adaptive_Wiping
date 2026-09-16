@@ -312,6 +312,9 @@ def main():
     parser.add_argument("--stiffness", type=float, default=1000.0)
     parser.add_argument("--width", type=float, default=0.02)
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     result = run_sweep(args.dataset_config, args.output, args.mu, args.stiffness, args.width)
     print(f"Sweep {result['state']}: {Path(args.output).resolve()}", flush=True)
     return 0 if result["state"] == "completed" else 2

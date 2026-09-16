@@ -23,6 +23,7 @@ from scripts.shared.common import (
     write_json,
 )
 from scripts.shared.paths import ROOT, read_path, writable_path
+from scripts.shared.run_layout import sim_data_path
 from scripts.sim_pretrain.acceptance import contact_motion_acceptance
 from scripts.sim_pretrain.collection import FIELDS, validate_trajectory
 from scripts.sim_pretrain.experiments.contact_control_experiment import (
@@ -220,7 +221,7 @@ def collect_mode(
     if not record_only:
         raise ValueError("Explicit record-only contact gate authorization is required")
     folder = read_path(cfg["output_dir"])
-    path = folder / "dataset.h5"
+    path = sim_data_path(folder, "dataset.h5")
     mode = cfg["research_comparison"]["controller"]
     started, attempted, env = time.monotonic(), 0, None
     with (folder / ".collection.lock").open("a+") as lock:
@@ -287,7 +288,7 @@ def collect_mode(
                                 env = None
                         h5.flush()
                         result = summarize(h5, cfg, time.monotonic() - started)
-                        write_json(folder / "collection.json", result)
+                        write_json(sim_data_path(folder, "collection.json"), result)
                         if attempted == 1 or attempted % 10 == 0:
                             print(
                                 mode, f"{split} {index + 1}/{count}", result["splits"], flush=True
@@ -297,10 +298,10 @@ def collect_mode(
                     env.close()
             result = summarize(h5, cfg, time.monotonic() - started)
             h5.attrs["complete"] = result["complete"]
-            write_json(folder / "collection.json", result)
+            write_json(sim_data_path(folder, "collection.json"), result)
         if result["complete"]:
             write_json(
-                folder / "dataset_integrity.json",
+                sim_data_path(folder, "dataset_integrity.json"),
                 {
                     "sha256": file_digest(path),
                     "config_hash": digest(cfg),
@@ -379,6 +380,10 @@ def main():
         parser.error("This research collection requires --record-only-contact-gate")
     if args.max_trajectories is not None and args.max_trajectories < 1:
         parser.error("--max-trajectories must be positive")
+    if not args.verify_only:
+        from scripts.shared.run_paths import new_output
+
+        args.output = new_output(args.output, resume=(Path(args.output) / "manifest.json").is_file())
     manifest, configs = initialize(args.output, load_config(args.config))
     if not args.verify_only:
         names = list(MODES) if args.mode == "both" else [args.mode]

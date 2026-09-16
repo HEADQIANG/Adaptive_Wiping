@@ -245,6 +245,9 @@ def main():
     parser.add_argument("--mu", type=float, default=0.9)
     parser.add_argument("--width", type=float, default=0.02)
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     result = run_stiffness_sweep(
         args.dataset_config, args.output, args.stiffness, args.mu, args.width
     )

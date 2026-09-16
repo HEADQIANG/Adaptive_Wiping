@@ -17,7 +17,7 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m scripts.sim_pretrain.experiments.decoder_activation_experiment \
   --dataset-config archive/sim_pretrain/two_control_pretraining_v2/normal/config.json \
   --previous-output archive/sim_pretrain/normal_vae_ablation_v1 \
-  --output runs/sim_pretrain/normal_decoder_activation_v1
+  --output runs/sim_training/normal_decoder_activation_v1
 ```
 
 The output directory must not exist. No overwrite or resume is supported. Do
@@ -88,7 +88,7 @@ sys.path.insert(0, "scripts")  # repository root; avoids ROS's scripts package
 from decoder_activation_experiment import load_activation_model
 
 model, metadata = load_activation_model(
-    "runs/sim_pretrain/normal_decoder_activation_v1/leaky_small_ae/best.pt"
+    "runs/sim_training/normal_decoder_activation_v1/leaky_small_ae/best.pt"
 )
 ```
 
@@ -104,8 +104,8 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m unittest discover -s tests -t . -p 'test_decoder_activation.py' -v
 MUJOCO_GL=egl OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m unittest discover -s tests -v
-less runs/sim_pretrain/normal_decoder_activation_v1/report.md
-xdg-open runs/sim_pretrain/normal_decoder_activation_v1/activation_comparison.png
+less runs/sim_training/normal_decoder_activation_v1/report.md
+xdg-open runs/sim_training/normal_decoder_activation_v1/activation_comparison.png
 ```
 
 Focused tests cover equal initialization, the negative-input derivative, exact
@@ -154,7 +154,7 @@ including10 new activation tests. No training or test process remains running.
 View the paired reconstruction without retraining:
 
 ```bash
-xdg-open runs/sim_pretrain/normal_decoder_activation_v1/train_reconstruction_083.png
+xdg-open runs/sim_training/normal_decoder_activation_v1/train_reconstruction_083.png
 ```
 
 The next candidate discussed is a separate direct `Linear(5,2400)` decoder

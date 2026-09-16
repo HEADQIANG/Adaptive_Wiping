@@ -71,7 +71,7 @@ Desktop OpenGL can use the default backend; for headless export select EGL befor
 Python imports MuJoCo:
 
 ```bash
-MUJOCO_GL=egl python -m scripts.sim_pretrain.experiments.visualize_wiping --no-viewer --gif runs/sim_pretrain/wiping_preview.gif
+MUJOCO_GL=egl python -m scripts.sim_pretrain.experiments.visualize_wiping --no-viewer --gif runs/sim_training/wiping_preview.gif
 ```
 
 Choose a new GIF filename for repeat exports; existing files are not overwritten.

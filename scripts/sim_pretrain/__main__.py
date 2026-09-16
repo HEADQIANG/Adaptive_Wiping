@@ -6,7 +6,7 @@ EXPERIMENTS = (
     "analyze_contact_experiment collect_control_comparison collect_normal_parallel "
     "contact_breakaway contact_control_experiment continue_pretraining decoder_activation_experiment "
     "diagnose_contact diagnose_reversal friction_ft_sweep plot_training_ft plot_ur5e_contact "
-    "recover_control_dataset repair_sponge_vae stiffness_ft_sweep summarize_control_data "
+    "recover_control_dataset repair_sponge_vae retrain_wide_vae stiffness_ft_sweep summarize_control_data "
     "test_ur5e_contact vae_ablation vae_property_probe validate_contact_reference "
     "visualize_wiping width_ft_sweep"
 ).split()

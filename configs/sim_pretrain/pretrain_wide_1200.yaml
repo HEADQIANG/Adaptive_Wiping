@@ -1,4 +1,4 @@
-output_dir: runs/sim_pretrain/pretrain_wide_1200_v1
+output_dir: runs/sim_training/pretrain_wide_1200_v1
 simulation:
   base_mount: tabletop
   base_xy: [0.07, 0.0]
@@ -29,7 +29,7 @@ randomization:
 collection:
   motion_gate: false
   sampling: subset_of_existing_latin_hypercube
-  source: runs/sim_pretrain/pretrain_wide_2000_v1
+  source: runs/sim_training/pretrain_wide_2000_v1
   split_seed: 20260912
 dataset:
   train: 960

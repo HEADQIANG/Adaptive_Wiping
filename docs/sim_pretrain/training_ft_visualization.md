@@ -19,7 +19,7 @@ python -m scripts.sim_pretrain.experiments.plot_training_ft \
   --dataset-config archive/sim_pretrain/two_control_pretraining_v2/normal/config.json \
   --indices 0 83 \
   --subset-manifest archive/sim_pretrain/normal_vae_ablation_v1/manifest.json \
-  --output runs/sim_pretrain/normal_ft_visualization_v1
+  --output runs/sim_data/normal_ft_visualization_v1
 ```
 
 The output must not already exist or be inside the frozen dataset or subset
@@ -58,9 +58,9 @@ units, channel ranges, retained counts and post-run input-integrity verification
 ## View And Test
 
 ```bash
-xdg-open runs/sim_pretrain/normal_ft_visualization_v1/sample_083.png
-xdg-open runs/sim_pretrain/normal_ft_visualization_v1/training_overview.png
-xdg-open runs/sim_pretrain/normal_ft_visualization_v1/normalized_sample_083.png
+xdg-open runs/sim_data/normal_ft_visualization_v1/sample_083.png
+xdg-open runs/sim_data/normal_ft_visualization_v1/training_overview.png
+xdg-open runs/sim_data/normal_ft_visualization_v1/normalized_sample_083.png
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 python -m unittest discover -s tests -t . -p 'test_training_ft_plot.py' -v
 ```

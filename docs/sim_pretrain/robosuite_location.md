@@ -1,5 +1,46 @@
 # robosuite 目录归属
 
+## 从 GitHub 还原当前适配（2026-09-16）
+
+主仓库通过 `.gitmodules` 固定上游 robosuite 提交
+`5ce6643f3092639d08f7b0f90ed1c6a84f50552c`。本机新增的 AIRBOT 注册、控制器、
+模型/网格和说明以 `patches/robosuite-airbot.patch` 发布，并附逐文件 SHA256 清单。
+不向上游仓库推送项目适配，也不让 Git 子模块指向只有本机存在的提交。
+
+新克隆在项目根目录执行：
+
+```bash
+git submodule update --init scripts/sim_pretrain/robosuite
+python3 -m scripts.shared.robosuite_patch apply
+python3 -m scripts.shared.robosuite_patch verify
+```
+
+已还原且哈希匹配时 `apply` 不写文件。部分应用、不同版本或冲突时拒绝覆盖，
+先检查自己的修改。无需对已正常工作的本机 robosuite 再执行 submodule update。
+适配后子模块显示 modified 是预期状态，完整差异已由主仓库补丁保存。
+
+在已配置的仿真环境中，先安装固定 checkout 自身的依赖，再安装项目固定版本：
+
+```bash
+python -m pip install -e scripts/sim_pretrain/robosuite
+python -m pip install -r requirements/sim_pretrain.txt
+python -m pip install --no-deps -e .
+```
+
+这样保留 termcolor、numba 等上游依赖，同时使用项目要求的 MuJoCo 等版本。
+PyTorch >= 2.6 按机器另行选择 CPU/CUDA 构建。不要另装一个替代本地 checkout 的 robosuite。
+
+后续有意修改依赖适配后，可重新导出再校验，并把两个补丁文件与相应说明一起提交：
+
+```bash
+python3 -m scripts.shared.robosuite_patch export
+python3 -m scripts.shared.robosuite_patch verify
+python3 -m unittest tests.shared.test_robosuite_patch
+```
+
+export 收录嵌套仓库中所有未被忽略的新增文件和相对 HEAD 的修改；导出前检查
+`git -C scripts/sim_pretrain/robosuite status --short`，避免将临时输出混入适配。
+
 完整仓库已从根目录移动至 `scripts/sim_pretrain/robosuite/`，保留 `.git`、
 已有修改、未跟踪的 AIRBOT 适配、文档和模型文件，未改动外部库内部源码。
 Python 的外部库导入名仍为 `robosuite`，不是 `scripts.sim_pretrain.robosuite`。
@@ -65,9 +106,10 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m pip install \
   此项仅验证软件链路，不代表接触质量或真机安全验收。
 - 新位置导入、打包排除、旧路径来源核验和依赖隔离通过，Ruff `F821,E9` 检查通过。
 
-记录：[全量回归日志](../../runs/sim_pretrain/robosuite_relocation_verification_001/logs/regression.log)、
-[SDK 假后端日志](../../runs/robot_control/robosuite_relocation_verification_001/logs/sdk.log)、
-[仿真报告](../../runs/sim_pretrain/robosuite_relocation_smoke_001/smoke_report.json)。
+历史记录路径如下；日志不随 Git 发布，部分旧日志已不在当前工作区，复核请运行下方命令：
+`runs/sim_training/robosuite_relocation_verification_001/logs/regression.log`、
+`runs/real_deploy/robot_control/robosuite_relocation_verification_001/logs/sdk.log`、
+`runs/sim_training/robosuite_relocation_smoke_001/smoke_report.json`。
 
 复核命令（在项目根目录运行；仿真输出目录须换成未使用的新运行名）：
 
@@ -80,5 +122,5 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m unittest \
 /home/wp/miniconda3/envs/clean/bin/python -m scripts.shared.artifacts verify
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 MUJOCO_GL=egl \
   /home/wp/miniconda3/envs/clean/bin/python -m scripts.sim_pretrain smoke-test \
-  --output runs/sim_pretrain/robosuite_relocation_smoke_002
+  --output runs/sim_training/robosuite_relocation_smoke_002
 ```

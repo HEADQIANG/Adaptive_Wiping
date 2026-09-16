@@ -148,6 +148,9 @@ def main(argv=None):
     output = args.output or args.csv.with_name(args.csv.stem + suffix + ".png")
     if output.suffix.lower() != ".png":
         parser.error("--output must have a .png extension")
+    from scripts.shared.run_paths import new_output
+
+    output = new_output(output)
     if output.resolve() == args.csv.resolve() or output.exists():
         parser.error(f"Output already exists or is the input (will not overwrite): {output}")
     fig = None

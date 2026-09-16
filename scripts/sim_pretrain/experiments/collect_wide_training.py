@@ -12,6 +12,7 @@ import numpy as np
 from scripts.shared.common import CHANNELS, digest, file_digest, load_config, provenance, write_json
 from scripts.shared.paths import writable_path
 from scripts.sim_pretrain.collection import FIELDS
+from scripts.shared.run_layout import sim_data_path
 from scripts.sim_pretrain.experiments.match_real_amplitude import TIMES, random_grid
 
 
@@ -56,7 +57,7 @@ def collect(cfg, out, proof):
     from scripts.sim_pretrain.simulation import FT_OUTPUT_FRAME, FT_OUTPUT_SIGNS, FT_PROCESSING
 
     plan = assignments(cfg)
-    with h5py.File(out / "dataset.h5", "a") as h5:
+    with h5py.File(sim_data_path(out, "dataset.h5"), "a") as h5:
         if "config_hash" not in h5.attrs:
             h5.attrs.update(config_hash=digest(cfg), provenance_json=json.dumps(proof), complete=False,
                             channels=json.dumps(CHANNELS), frame=FT_OUTPUT_FRAME,
@@ -113,15 +114,16 @@ def collect(cfg, out, proof):
                        any_saturation=sum(r["metrics"]["saturation_fraction"]>0 for r in diagnostics),
                        valid_counts={s:int(h5[s]["valid"][:].sum()) for s in plan}, failures=failures)
         h5.attrs["complete"] = bool(complete)
-        write_json(out / "collection.json", summary)
+        write_json(sim_data_path(out, "collection.json"), summary)
     if not complete:
         raise RuntimeError("Numerically invalid/missing trajectories; rerun to retry same assignments")
-    write_json(out / "dataset_integrity.json", dict(sha256=file_digest(out / "dataset.h5")))
+    write_json(sim_data_path(out, "dataset_integrity.json"), dict(sha256=file_digest(out / "dataset.h5")))
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/sim_pretrain/pretrain_wide_2000.yaml")
+    parser.add_argument("--resume", action="store_true", help="Continue the exact config output_dir, including legacy runs")
     args = parser.parse_args(argv)
     cfg = load_config(args.config)
     if cfg.get("collection", {}).get("motion_gate") is not False:
@@ -130,6 +132,9 @@ def main(argv=None):
         raise ValueError("Unsupported sampling policy")
     if not 1 <= cfg["collection"]["workers"] <= 4:
         raise ValueError("workers must be in [1,4]")
+    from scripts.shared.run_paths import new_run_config
+
+    cfg = new_run_config(cfg, resume=args.resume)
     out = writable_path(cfg["output_dir"])
     out.mkdir(parents=True, exist_ok=True)
     with (out / ".experiment.lock").open("a+") as lock:
@@ -143,7 +148,7 @@ def main(argv=None):
             if any(p.name != ".experiment.lock" for p in out.iterdir()):
                 raise ValueError("Output is not a fresh experiment directory")
             write_json(manifest, proof)
-            write_json(out / "assignments.json", assignments(cfg))
+            write_json(sim_data_path(out, "assignments.json"), assignments(cfg))
         collect(cfg, out, proof)
         from scripts.sim_pretrain.learning import train, evaluate
 

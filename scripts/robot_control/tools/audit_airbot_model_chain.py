@@ -107,6 +107,9 @@ def main():
     )
     p.add_argument("--output", type=Path, required=True)
     args = p.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     if args.output.exists():
         raise FileExistsError(args.output)
     hashes = {str(x): digest(x) for x in (args.startup_log, args.urdf)}

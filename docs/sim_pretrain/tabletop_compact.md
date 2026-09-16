@@ -67,8 +67,8 @@ Use `/home/wp/miniconda3/envs/clean/bin/python` if conda activation is unavailab
 Optional headless exports require EGL and new output filenames:
 
 ```bash
-MUJOCO_GL=egl python -m scripts.sim_pretrain.experiments.visualize_wiping --no-viewer --gif runs/sim_pretrain/tabletop_compact.gif --mu 0 --stiffness 1000 --width 0.02 --speed 1
-MUJOCO_GL=egl python -m scripts.sim_pretrain.experiments.visualize_wiping --closeup --no-viewer --gif runs/sim_pretrain/tabletop_compact_closeup.gif --mu 0 --stiffness 1000 --width 0.02 --speed 1
+MUJOCO_GL=egl python -m scripts.sim_pretrain.experiments.visualize_wiping --no-viewer --gif runs/sim_training/tabletop_compact.gif --mu 0 --stiffness 1000 --width 0.02 --speed 1
+MUJOCO_GL=egl python -m scripts.sim_pretrain.experiments.visualize_wiping --closeup --no-viewer --gif runs/sim_training/tabletop_compact_closeup.gif --mu 0 --stiffness 1000 --width 0.02 --speed 1
 ```
 
 Reset and pose tests verify six DOFs, absence of the old pedestal/rails, mounting

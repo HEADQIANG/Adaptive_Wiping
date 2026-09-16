@@ -20,6 +20,9 @@ def main():
     )
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     output = Path(args.output)
     if output.exists():
         raise FileExistsError(output)

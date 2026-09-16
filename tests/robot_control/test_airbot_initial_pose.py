@@ -141,7 +141,7 @@ class InitialPoseTests(unittest.TestCase):
         self.assertEqual(record["initial_pose"]["joint_position_rad"], [0.1] * 6)
         self.assertEqual(record["initial_pose"]["sdk_end_orientation_xyzw"], [0, 0, 0, 1])
         self.assertEqual(len(record["samples"]), 11)
-        self.assertFalse(record["coordinate_semantics"]["sponge_tcp_calibrated"])
+        self.assertEqual(record["coordinate_semantics"]["end_frame"], "SDK configured end frame")
 
     def test_q_is_not_an_exit_option_and_uppercase_s_saves(self):
         self.assertTrue(self.run_teach(["q", "S"]))
@@ -377,14 +377,19 @@ class InitialPoseTests(unittest.TestCase):
                     recorder.main(["teach", "--execute", "--output", str(self.path)])
             connect.assert_not_called()
 
-    def test_cancel_does_not_connect(self):
+    def test_execute_starts_teaching_without_startup_passphrase(self):
         with (
-            patch.object(recorder, "open_client") as connect,
+            patch.object(recorder, "open_client", return_value=self.client) as connect,
+            patch.object(recorder, "teach", return_value=True) as teach,
             patch.object(recorder.sys.stdin, "isatty", return_value=True),
-            patch("builtins.input", return_value="no"),
+            patch.dict("sys.modules", {"arm_sdk": SimpleNamespace(Controller=SimpleNamespace(idle="idle"))}),
+            patch("builtins.input", side_effect=AssertionError("Unexpected startup prompt")) as prompt,
         ):
             self.assertEqual(recorder.main(["teach", "--execute", "--output", str(self.path)]), 0)
-            connect.assert_not_called()
+            connect.assert_called_once()
+            teach.assert_called_once()
+            prompt.assert_not_called()
+        self.assertEqual(self.client.calls, ["close"])
 
     def test_inspect_is_read_only_and_closes(self):
         with patch.object(recorder, "open_client", return_value=self.client):

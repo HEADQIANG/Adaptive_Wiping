@@ -13,7 +13,7 @@ import h5py
 import numpy as np
 import torch
 
-from scripts.real_training.config import load_config, native_profile, resolve
+from scripts.real_training.config import load_config, native_profile, resolve, sdk_position_profile
 from scripts.real_training.data import PROTOCOL, load_prepared
 from scripts.robot_control.adapter import DeadlineStub, Robot
 from scripts.robot_control.airbot_initial_pose import validate_stationary
@@ -37,13 +37,17 @@ from scripts.shared.common import file_digest, write_json
 from scripts.shared.policy import OfflinePolicy
 from scripts.shared.real_preprocessing import finite_array, make_windows
 from scripts.shared.sampling import previous_samples
+from scripts.real_deploy.wiping_frame import WALL_DIRECTIONS, WipingFrame
 
 
 class PolicyLoop:
-    """100 Hz causal FT; five 0.4 s histories predict the NEXT waypoint."""
+    """100 Hz causal FT; optional 2 s stationary history before the 10 s path."""
 
-    def __init__(self, policy, embedding, initial_position):
+    def __init__(self, policy, embedding, initial_position, *, stationary_start=False, wiping_frame=None):
         self.policy, self.embedding = policy, embedding
+        self.frame = wiping_frame or WipingFrame()
+        self.motion_start_tick = 200 if stationary_start else 0
+        self.final_tick = self.motion_start_tick + 1000
         self.xy = finite_array(policy.predict_xy(embedding)[0], "XY prediction")
         self.initial = finite_array(initial_position, "initial position")
         if self.xy.shape != (25, 2) or self.initial.shape != (3,):
@@ -51,14 +55,15 @@ class PolicyLoop:
         self.filter = policy.make_ft_filter(100)
         self.history = deque(maxlen=5)
         self.segment_start = self.initial.copy()
-        self.segment_end = np.r_[self.xy[0], self.initial[2]]
+        self.segment_end = self.initial.copy() if stationary_start else self.frame.endpoint(
+            self.xy[0], self.initial[self.frame.normal_axis])
         self.next_tick = 0
         self.last_delta = None
 
     def push(self, tick, raw_ft, measured_position):
-        if tick != self.next_tick or not 0 <= tick <= 1000:
+        if tick != self.next_tick or not 0 <= tick <= self.final_tick:
             raise ValueError(
-                "Policy ticks must be contiguous 0..1000; no catch-up or skipped histories"
+                f"Policy ticks must be contiguous 0..{self.final_tick}; no catch-up or skipped histories"
             )
         measured = finite_array(measured_position, "measured position")
         if measured.shape != (3,):
@@ -67,25 +72,28 @@ class PolicyLoop:
         self.last_delta = None
         if tick and tick % 40 == 0:
             self.history.append(filtered)
-            k = tick // 40 - 1
-            if k < 24:
+            waypoint = (tick - self.motion_start_tick) // 40
+            if 0 <= waypoint < 25:
                 self.segment_start = self.segment_end.copy()
-                height = self.initial[2]
+                height = self.initial[self.frame.normal_axis]
                 if len(self.history) == 5:
                     self.last_delta = float(
                         self.policy.predict_delta_h(self.embedding, np.array(self.history)[None])[
                             0, 0
                         ]
                     )
-                    height = measured[2] + self.last_delta
-                self.segment_end = np.r_[self.xy[k + 1], height]
+                    height = measured[self.frame.normal_axis] + self.frame.normal_sign * self.last_delta
+                self.segment_end = self.frame.endpoint(self.xy[waypoint], height)
         self.next_tick += 1
         return filtered
 
     def target(self, tick):
-        if not 0 <= tick <= 1000:
-            raise ValueError("Target outside the 10-second policy horizon")
-        alpha = 1.0 if tick == 1000 else (tick % 40) / 40
+        if not 0 <= tick <= self.final_tick:
+            raise ValueError("Target outside the policy horizon")
+        if tick < self.motion_start_tick:
+            return self.initial.copy()
+        motion_tick = tick - self.motion_start_tick
+        alpha = 1.0 if tick == self.final_tick else (motion_tick % 40) / 40
         return self.segment_start + alpha * (self.segment_end - self.segment_start)
 
 
@@ -94,9 +102,9 @@ def deployment_blockers(policy, cfg):
     meta = policy.metadata["data"]["metadata"]
     if policy.source_kind != "real":
         blockers.append("Synthetic policies cannot command hardware")
-    if policy.metadata["training_contract"]["profile"] != "paper_downstream":
+    if policy.metadata["training_contract"]["profile"] != "airbot_sensor_calibrated_offline":
         blockers.append(
-            "Native-frame offline model has no verified sensor/TCP calibration; calibrate and retrain"
+            "This mode requires sensor-calibrated SDK data; native models use --mode fixed-setup"
         )
     if "exploration_outside_encoder_normalization_range_not_clipped" in policy.warnings:
         blockers.append(
@@ -169,14 +177,14 @@ def validate_setup(policy, cfg):
         raise ValueError("Invalid approved joint current limits")
     if cfg["max_initial_force_n"] > cfg["max_force_n"]:
         raise ValueError("Initial force limit exceeds running force limit")
-    start = finite_array(cfg["initial_tcp_position_m"], "initial TCP")
+    start = finite_array(cfg["initial_sdk_position_m"], "initial SDK position")
     quat = finite_array(cfg["sdk_end_orientation_xyzw"], "SDK orientation")
     if (
         start.shape != (3,)
         or quat.shape != (4,)
         or not np.isclose(np.linalg.norm(quat), 1, atol=1e-6)
     ):
-        raise ValueError("Set a measured initial TCP and unit xyzw orientation")
+        raise ValueError("Set a measured initial SDK position and unit xyzw orientation")
     return frames
 
 
@@ -240,7 +248,11 @@ def check_state(robot, sensor, cfg, frames, target=None, *, controller="servo", 
 
 
 def guard_segment(loop, cfg):
-    if np.linalg.norm(loop.segment_end - loop.segment_start) / 0.4 > cfg["max_cartesian_speed_m_s"]:
+    speed_policy = cfg.get("cartesian_speed_policy", "stop")
+    if (speed_policy not in ("stop", "record-only")
+            or (speed_policy == "record-only" and cfg.get("deployment_mode") != "manual_tared_original_v1")):
+        raise ValueError("Cartesian speed record-only is restricted to original manual deployment")
+    if speed_policy == "stop" and np.linalg.norm(loop.segment_end - loop.segment_start) / 0.4 > cfg["max_cartesian_speed_m_s"]:
         raise StateError("Predicted segment exceeds approved Cartesian speed; no clipping")
     if loop.last_delta is not None and abs(loop.last_delta) > cfg["max_delta_h_m"]:
         raise StateError("Predicted vertical increment exceeds approved limit; no clipping")
@@ -267,14 +279,14 @@ def execute(robot, sensor, policy, embedding, cfg, frames, stream, *, finish=wai
         for _ in range(11):
             state, _ = check_state(robot, sensor, cfg, frames, controller="idle", initial=True)
             if (
-                np.linalg.norm(frames.to_tcp(state) - cfg["initial_tcp_position_m"])
+                np.linalg.norm(np.asarray(state["sdk_end_position_m"]) - cfg["initial_sdk_position_m"])
                 > cfg["max_start_error_m"]
             ):
                 raise StateError("Manually position at approved start; no automatic homing")
             stationary.append(state)
             time.sleep(0.05)
         validate_stationary(stationary)
-        loop = PolicyLoop(policy, embedding, frames.to_tcp(state))
+        loop = PolicyLoop(policy, embedding, state["sdk_end_position_m"])
         guard_segment(loop, cfg)
         attempted = True
         robot.enter()
@@ -290,9 +302,9 @@ def execute(robot, sensor, policy, embedding, cfg, frames, stream, *, finish=wai
             if item is None or not 0 <= due - item[0] <= 0.020:
                 raise StateError("No fresh causal FT at the policy deadline")
             ft = frames.wrench(item[1])
-            loop.push(tick, ft, frames.to_tcp(state))
+            loop.push(tick, ft, state["sdk_end_position_m"])
             guard_segment(loop, cfg)
-            target = frames.to_end(loop.target(tick), cfg["sdk_end_orientation_xyzw"])
+            target = loop.target(tick)
             read_force(sensor, cfg)
             if time.perf_counter() - due > 0.009:
                 raise StateError("Observation/inference deadline exceeded before motion command")
@@ -330,16 +342,16 @@ def execute(robot, sensor, policy, embedding, cfg, frames, stream, *, finish=wai
         raise
 
 
-def replay(cfg, output):
+def replay(cfg, output, *, policy_path=None):
     arrays, info = load_prepared(cfg)
     if (
         not native_profile(cfg)
-        and info["metadata"].get("conversion") != "measured_frames_then_causal_100hz_hold_v1"
+        and info["metadata"].get("conversion") != "sensor_frames_sdk_pose_causal_100hz_hold_v2"
     ):
         raise ValueError("Calibrated replay requires the audited AIRBOT 100 Hz conversion")
     if not np.all(arrays["ft_hz"] == 100):
         raise ValueError("Replay requires a 100 Hz training filter grid")
-    policy_path = resolve(cfg["output_dir"]) / "policy.pt"
+    policy_path = resolve(policy_path) if policy_path else resolve(cfg["output_dir"]) / "policy.pt"
     policy = OfflinePolicy(policy_path)
     if policy.metadata["bindings"]["prepared_sha256"] != info["sha256"]:
         raise ValueError("Policy and replay dataset differ")
@@ -352,7 +364,7 @@ def replay(cfg, output):
             start = group.attrs["start_time"]
             grid = np.arange(1001) / 100
             ft = previous_samples(group["ft_time"][:] - start, group["ft"][:], grid)
-            key = "sdk_end_position" if native_profile(cfg) else "tcp_position"
+            key = "sdk_end_position" if sdk_position_profile(cfg) else "tcp_position"
             xyz = previous_samples(group["pose_time"][:] - start, group[key][:], grid)
             loop = PolicyLoop(policy, arrays["sponge"][index : index + 1], xyz[0])
             trajectory, prediction = [], []
@@ -404,16 +416,47 @@ def main(argv=None):
     parser.add_argument(
         "action", choices=("preflight", "replay", "shadow", "run"), nargs="?", default="preflight"
     )
-    parser.add_argument("--mode", choices=("calibrated", "fixed-setup"), default="calibrated")
+    parser.add_argument("--mode", choices=("calibrated", "fixed-setup", "manual-tared"),
+                        help="Inferred from --policy when omitted; otherwise defaults to calibrated")
     parser.add_argument("--config")
+    parser.add_argument("--wiping-mode", choices=("horizontal", "vertical"), default="horizontal",
+                        help="Runtime-start manual wiping plane; default keeps the original XY/Z motion")
+    parser.add_argument("--wall-direction", choices=WALL_DIRECTIONS,
+                        help="SDK direction toward wall for negative delta-h: +/-x swaps X/Z, +/-y swaps Y/Z")
+    parser.add_argument("--policy", help="Exported policy.pt or training directory; resolves bound inputs automatically")
     parser.add_argument(
-        "--training-config", default="configs/real_training/real_training_airbot_native.yaml"
+        "--training-config", help="Legacy replay training configuration (without --policy)"
     )
     parser.add_argument("--output", type=Path)
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=50051)
     args = parser.parse_args(argv)
+    try:
+        WipingFrame(args.wiping_mode, args.wall_direction)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if args.policy and args.training_config:
+        parser.error("--policy resolves its own training inputs; do not combine with --training-config")
+    if args.policy:
+        from scripts.real_deploy.policy_selection import policy_file, policy_mode
+
+        try:
+            args.policy = str(policy_file(args.policy))
+            inferred = policy_mode(args.policy, replay=args.action == "replay")
+            if args.mode and args.mode != inferred:
+                raise ValueError(f"Selected policy requires --mode {inferred}, not {args.mode}")
+            args.mode = inferred
+        except (OSError, ValueError, RuntimeError, KeyError, TypeError) as exc:
+            print(f"{type(exc).__name__}: {exc}", file=sys.stderr)
+            return 2
+    args.mode = args.mode or ("manual-tared" if args.wiping_mode == "vertical" else "calibrated")
+    if args.wiping_mode == "vertical" and (args.mode != "manual-tared" or args.action not in ("preflight", "run")):
+        parser.error("Vertical wiping requires runtime-start manual-tared preflight/run")
+    if args.mode == "manual-tared":
+        from scripts.real_deploy.manual_setup import main as manual_main
+
+        return manual_main(args)
     if args.mode == "fixed-setup":
         from scripts.real_deploy.fixed_setup import main as fixed_main
 
@@ -428,10 +471,25 @@ def main(argv=None):
         if args.action == "replay":
             if args.output is None:
                 parser.error("replay requires a fresh --output directory")
-            result = replay(load_config(args.training_config), args.output)
+            from scripts.shared.run_paths import new_output
+
+            args.output = new_output(args.output)
+            if args.policy:
+                from scripts.real_deploy.policy_selection import training_inputs
+
+                _, _, training, _ = training_inputs(args.policy)
+                result = replay(training, args.output, policy_path=args.policy)
+            else:
+                result = replay(load_config(args.training_config or
+                    "configs/real_training/real_training_airbot_native.yaml"), args.output)
             print(json.dumps(result, indent=2))
             return 0
         cfg = json.loads(Path(args.config).read_text())
+        if args.policy:
+            from scripts.real_deploy.policy_selection import training_inputs
+
+            selected, _, training, _ = training_inputs(args.policy)
+            cfg.update(policy=str(selected), prepared_data=str(resolve(training["output_dir"]) / "prepared.h5"))
         policy_hash = file_digest(resolve(cfg["policy"]))
         policy = OfflinePolicy(resolve(cfg["policy"]))
         if file_digest(resolve(cfg["policy"])) != policy_hash:
@@ -450,7 +508,7 @@ def main(argv=None):
         embedding = load_exploration(resolve(cfg["exploration"]), policy)
         if file_digest(resolve(cfg["exploration"])) != exploration_hash:
             raise ValueError("Task exploration changed while being loaded")
-        loop = PolicyLoop(policy, embedding, cfg["initial_tcp_position_m"])
+        loop = PolicyLoop(policy, embedding, cfg["initial_sdk_position_m"])
         guard_segment(loop, cfg)
         if args.action == "preflight":
             print(
@@ -465,13 +523,15 @@ def main(argv=None):
             return 0
         if not args.execute or not sys.stdin.isatty() or args.output is None:
             parser.error("run requires --execute, an attended terminal and a fresh --output JSONL")
+        from scripts.shared.run_paths import new_output
+
+        args.output = new_output(args.output)
         if args.output.exists():
             raise FileExistsError(args.output)
         print(
             "Physical emergency stop and safe support required. No automatic homing, retry or retract."
         )
-        if input("Type DEPLOY to run the reviewed policy: ").strip() != "DEPLOY":
-            return 0
+        print("--execute authorizes the reviewed policy after live checks.")
         if (
             file_digest(resolve(cfg["policy"])) != policy_hash
             or file_digest(resolve(cfg["exploration"])) != exploration_hash

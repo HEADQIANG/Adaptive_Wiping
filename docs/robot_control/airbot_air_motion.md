@@ -23,11 +23,11 @@
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.airbot_initial_pose teach \
-  --execute --output runs/robot_control/real_robot/air_motion_start_001.json \
+  --execute --output runs/real_deploy/robot_control/real_robot/air_motion_start_001.json \
   --label air_motion_start --tool-note "28 mm sponge; elevated non-contact motion start"
 ```
 
-安全支撑机械臂后输入 `DRAG`，待显示重力补偿已激活，再手动移到空中姿态。
+安全支撑机械臂后执行带 `--execute` 的命令，不再输入启动口令；待显示重力补偿已激活，再手动移到空中姿态。
 保留待验证的工具朝向，避开关节极限/奇异姿态。确认沿整个 50 mm 横移范围，
 工具最低部位对下方最高障碍物的起始净空**至少 50 mm**，并且侧面和整臂扫过的区域也无碰撞。
 不要只根据 SDK Z 坐标或海绵厚度推算净空，需考虑实际安装件、工具尺寸和姿态误差。
@@ -44,7 +44,7 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.a
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.airbot_initial_pose capture-idle \
-  --output runs/robot_control/real_robot/air_motion_start_idle_001.json \
+  --output runs/real_deploy/robot_control/real_robot/air_motion_start_idle_001.json \
   --label air_motion_start --tool-note "28 mm sponge; settled idle air start"
 ```
 
@@ -129,17 +129,17 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training e
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run \
-  --mode air --execute --time-scale 5 --output runs/robot_control/real_robot/air_motion_slow_001.jsonl
+  --mode air --execute --time-scale 5 --output runs/real_deploy/robot_control/real_robot/air_motion_slow_001.jsonl
 ```
 
 现场批准原速度时使用以下命令，目标时间与仿真一致：
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.real_training explore run \
-  --mode air --execute --time-scale 1 --output runs/robot_control/real_robot/air_motion_001.jsonl
+  --mode air --execute --time-scale 1 --output runs/real_deploy/robot_control/real_robot/air_motion_001.jsonl
 ```
 
-必须在交互终端输入独立确认词 `AIR-MOTION`。`EXPLORE` 或 `CONTACT-NO-FT` 不会启用空中动作。
+仍须交互终端、`--execute` 和显式 `--mode air`，且配置模式一致；不再输入启动口令。
 四秒探索结束时还在下移 10 mm 的高度，随后进行单独的上退阶段；回到空中起点后 servo 仍激活，
 安排安全支撑并输入 `IDLE` 才正常释放控制。不要关终端、强杀或断电来替代正常交接。
 

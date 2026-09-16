@@ -1,4 +1,4 @@
-output_dir: runs/sim_pretrain/normal_kwr52_left_v1
+output_dir: runs/sim_training/normal_kwr52_left_v1
 simulation:
   base_mount: tabletop
   base_xy:

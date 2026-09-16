@@ -24,7 +24,14 @@ class ModelAssetTests(unittest.TestCase):
         self.assertTrue(result["passed"], result["errors"])
         records = json.loads(MANIFEST.read_text())["files"]
         recorded = {ROOT / r["path"] for r in records}
-        actual = {p for p in ASSETS.rglob("*") if p.is_file()} - {ASSETS / "README.md", MANIFEST}
+        # The source-copy manifest covers runtime models, inertia references and
+        # licenses. Mechanical CAD in asserts/connector is a separate resource.
+        actual = {
+            p
+            for folder in (ROBOSUITE_MODELS, ASSETS / "references", ASSETS / "licenses")
+            for p in folder.rglob("*")
+            if p.is_file()
+        }
         self.assertEqual(recorded, actual)
         self.assertTrue(all(not p.is_symlink() for p in actual))
 

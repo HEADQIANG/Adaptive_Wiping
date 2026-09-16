@@ -190,6 +190,9 @@ def main():
     parser.add_argument("--config", default="configs/sim_pretrain/pretrain_paper.yaml")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
+    from scripts.shared.run_paths import new_output
+
+    args.output = new_output(args.output)
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=False)
     cfg = load_config(args.config)

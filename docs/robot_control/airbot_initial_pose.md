@@ -8,18 +8,18 @@
 
 ```bash
 python -m scripts.robot_control.airbot_initial_pose teach \
-  --execute --output runs/real_training/real_robot/exploration_start_008.json \
+  --execute --output runs/real_exploration/exploration_start_008.json \
   --label exploration_start --tool-note "Installed KWR75A and sponge"
 ```
 
-在项目根目录、已激活 SDK 虚拟环境且完成下述硬件准备后执行。仍需输入 `DRAG` 并回车，
+在项目根目录、已激活 SDK 虚拟环境且完成下述硬件准备后执行。`--execute` 授权启动，不再输入口令，
 静止并支撑好机械臂后按 S。终端显示 `Updated exploration config` 表示更新成功。
 随后直接运行 `python -m scripts.real_training explore check --config configs/real_training/airbot_exploration.json`。
 取消、保存失败或 idle 未确认时不会更新配置；配置写入失败会报错，但保留已保存的位姿文件。
 其他 label 和 `capture-idle` 不自动修改探索配置。此功能不自动归位，也不启动探索。
 静止检查通过后保存并自动切回 idle 退出，不再有 `Q` 退出选项。
 按键前必须准备好安全支撑，idle 不保证保持位置。`Ctrl+C` 可取消；
-启动前的 `DRAG` 加回车确认保持不变，运行命令与 JSON 格式不变。
+运行命令与 JSON 格式不变，执行前先托稳；检查通过即进入拖拽，详见 [统一交互规则](interaction.md)。
 
 > 目录已分类迁移：当前主流程见 [本类操作入口](README.md)。代码块使用新运行目录，历史结果引用归档；新配置、源码与旧实验不可混作原地续训。
 
@@ -54,7 +54,7 @@ python -m scripts.robot_control.airbot_initial_pose teach \
 - 操作者从切换前到整个会话结束均需能托住机械臂；建议第二人操作键盘并监护急停。
   不把手放在夹点内，不强推关节限位，不照搬论文“尽可能用力”的要求。
 - 初次仅选无接触、留有安全间隙的准备位姿，工具朝向未来擦拭面，关节远离限位和奇异姿态。
-  接触起点的确定应在工具/TCP 和力传感器标定完成后进行。
+  接触起点按固定安装、工具姿态、实测间隙和现场力保护确认；不要求 TCP 标定。
 - `idle` 不等于位置保持。退出、异常、断电或控制权丢失可能导致失去支撑；不能依赖软件急停或重力补偿承重。
 - 不运行官方 `record_and_replay` 示例来做这一步，该示例停止录制会调用 `return_zero()`。
   官方部分名称为 `get_*` 的示例也会主动切换重力补偿；本项目的 `inspect` 才是只读入口。
@@ -118,12 +118,12 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.a
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.airbot_initial_pose teach \
   --execute \
-  --output runs/robot_control/real_robot/initial_pose_001.json \
+  --output runs/real_deploy/robot_control/real_robot/initial_pose_001.json \
   --label wiping_start \
   --tool-note "Describe the mounted sensor, plate and sponge here"
 ```
 
-1. 托稳机械臂，核对屏幕警告后输入大写 `DRAG` 并回车。其他输入取消，不连接硬件。
+1. 执行带 `--execute` 的命令前托稳机械臂并完成现场检查；程序不再等待启动口令。
 2. 程序申请独占控制权，调用 SDK `enter_gravity_compensation_mode()`，并检查 `gravity_comp` 状态。
    只有显示 `Gravity compensation active` 后才开始缓慢手动拖动。
 3. 拖到选定的初始位置和朝向，保持支撑并静止。按 `S` 或 `s`，无需回车。
@@ -146,7 +146,7 @@ Ctrl+C、终端 EOF 或读取/保存异常会尝试相同的 idle 清理，因�
 ## 6. 文件内容与限制
 
 ```bash
-env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m json.tool runs/robot_control/real_robot/initial_pose_001.json
+env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m json.tool runs/real_deploy/robot_control/real_robot/initial_pose_001.json
 ```
 
 - `initial_pose.joint_position_rad`：六个实测关节角，rad；另存速度 rad/s。
@@ -154,7 +154,7 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m json.tool runs/robot_co
 - `initial_pose.sdk_end_orientation_xyzw`：SDK 末端姿态四元数 `[qx,qy,qz,qw]`。
 - `host_time_utc`、`host_monotonic_s`、`read_duration_s`：主机读取时间及耗时，不是电机硬件时间。
 - `metadata`：标签、工具说明、服务地址、缓存固件信息；`samples` 保留静止检查的原始样本。
-- `coordinate_semantics`：明确未完成海绵 TCP 标定，SDK 参考坐标系和末端定义需核对服务配置。
+- `coordinate_semantics`：记录 SDK 参考坐标系和末端定义，不再保存 TCP 标定状态。
 
 SDK 两次读取关节与位姿，并非同一个原子快照。静止窗口降低时序偏差，但无法证明底层电机数据新鲜。
 服务缓存有效性和电机错误检查只是辅助诊断，不构成独立安全保护。
@@ -181,7 +181,7 @@ env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m unittest discover -s te
 
 只读诊断依据：
 
-- `/home/wp/runs/robot_control/all.log`、`airbot.controllers.log` 等旧日志为 `root:root 644`，
+- `/home/wp/runs/real_deploy/robot_control/all.log`、`airbot.controllers.log` 等旧日志为 `root:root 644`，
   当前 `wp` 用户无法追加写入；`/tmp/zlog.conf` 的输出规则使用 `AIRBOT_LOG_DIR`。
   第 4 节改为用户新建的独立日志目录，不删除旧日志、不修改其所有权。
 - `/var/crash/_usr_bin_airbot-arm.1000.crash` 中 `Threads: 26`，
@@ -248,7 +248,7 @@ Not saved: Joint speed exceeds limit=0.05 rad/s: J4 peak=0.07 rad/s; support and
 
 旧的运行中进程不会自动加载修复：先托稳机械臂，在旧会话输入 `q` 并回车，确认退出，
 再在项目根目录重新执行第 5 节的 `teach` 命令。不需要重启正常运行的 `airbot-arm` 服务。
-重新人工确认 `DRAG`，拖到起点并静止、托稳后按 `S` 保存并自动退出，无需回车。
+现场准备完成后重新运行带 `--execute` 的命令，拖到起点并静止、托稳后按 `S` 保存并自动退出，无需回车。
 如果仍失败，保留完整提示；不要继续放宽阈值，先确认是否存在实际下沉或抖动。
 # 退出拖动后的只读起点记录
 
@@ -256,7 +256,7 @@ Not saved: Joint speed exceeds limit=0.05 rad/s: J4 peak=0.07 rad/s; support and
 
 ```bash
 env -u PYTHONPATH /home/wp/airbot-venv-5.2/bin/python -m scripts.robot_control.airbot_initial_pose capture-idle \
-  --output runs/robot_control/real_robot/air_motion_start_idle_001.json \
+  --output runs/real_deploy/robot_control/real_robot/air_motion_start_idle_001.json \
   --label air_motion_start --tool-note "28 mm sponge; settled idle air start"
 ```
 

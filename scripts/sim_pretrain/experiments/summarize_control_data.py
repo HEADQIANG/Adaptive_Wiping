@@ -110,8 +110,11 @@ def summarize(out):
             np.testing.assert_allclose(a, b, atol=1e-12, rtol=0)
             report["paired_target_max_difference_m"][split] = float(np.abs(a - b).max())
             np.testing.assert_array_equal(normal[f"{split}/time"][:], impedance[f"{split}/time"][:])
-    plot(out, bands, examples)
-    write_json(out / "data_summary.json", report)
+    from scripts.shared.run_paths import new_output
+
+    destination = new_output(out / "data_summary.json").parent
+    plot(destination, bands, examples)
+    write_json(destination / "data_summary.json", report)
     print(
         json.dumps(
             {

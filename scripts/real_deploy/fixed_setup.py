@@ -13,16 +13,17 @@ import torch
 
 from scripts.real_deploy.airbot_deploy import PolicyLoop, guard_segment
 from scripts.real_training import airbot_programmed_demonstrations as program
-from scripts.real_training.config import load_config, output_lock, resolve, training_contract
+from scripts.real_training.config import output_lock, resolve, training_contract
 from scripts.real_training.data import load_prepared
 from scripts.robot_control.adapter import DeadlineStub, Robot
 from scripts.robot_control.airbot_initial_pose import NotStationary, validate_stationary
 from scripts.robot_control.client import StateError, open_client
 from scripts.robot_control.safety import (
     check_bounds, interrupt_on_signal, measured_joint_speed_limit, positive,
-    quaternion_angle, read_force, write_event,
+    quaternion_angle, read_force, torque_limit_enforced, write_event,
 )
 from scripts.shared.common import file_digest, write_json
+from scripts.shared.paths import recorded_source_hash
 from scripts.shared.policy import OfflinePolicy
 from scripts.shared.real_preprocessing import finite_array, make_windows
 
@@ -49,7 +50,7 @@ class FixedSetupLoop(PolicyLoop):
         return filtered
 
 
-def load_setup(path):
+def load_setup(path, *, policy_path=None):
     path = resolve(path)
     bindings = {str(path): file_digest(path)}
     spec = json.loads(path.read_text())
@@ -57,14 +58,15 @@ def load_setup(path):
         raise ValueError("Expected fixed-setup deployment configuration")
     if spec.get("same_hardware_and_sponge_confirmed") is not True:
         raise ValueError("Fixed installation and same sponge must be confirmed")
-    training_path = resolve(spec["training_config"])
-    training = load_config(training_path)
+    from scripts.real_deploy.policy_selection import bind_runtime_software, select_setup
+
+    spec, training, selected_bindings = select_setup(spec, policy_path)
+    bindings.update(selected_bindings)
     if training["profile"] != "airbot_native_tared_offline":
         raise ValueError("Fixed setup requires tared native training profile")
     arrays, info = load_prepared(training)
     if not np.all(arrays["ft_hz"] == 100):
         raise ValueError("Fixed setup requires training FT filtered on a 100 Hz grid")
-    bindings[str(training_path)] = file_digest(training_path)
     policy_path = resolve(spec["policy"])
     policy_hash = file_digest(policy_path)
     if policy_hash != spec["policy_sha256"]:
@@ -89,7 +91,7 @@ def load_setup(path):
     session_path = resolve(spec["collection_session"]) / "session.json"
     session_hash = file_digest(session_path)
     if (session_hash != spec["collection_session_sha256"]
-            or meta["source_hashes"].get(str(session_path)) != session_hash):
+            or recorded_source_hash(meta["source_hashes"], session_path) != session_hash):
         raise ValueError("Policy must be bound to the reviewed collection session")
     frozen = json.loads(session_path.read_text())
     cfg = dict(frozen["config"])
@@ -127,16 +129,11 @@ def load_setup(path):
     embedding = policy.encode_exploration(arrays["exploration"])
     np.testing.assert_array_equal(arrays["sponge"], np.repeat(embedding, 8, axis=0))
     bindings.update(meta["source_hashes"])
-    for relative, expected in policy.metadata["bindings"]["software"]["sources"].items():
-        bindings[str(resolve(relative))] = expected
     bindings.update({str(resolve(training["raw_data"])): info["raw_sha256"],
                      str(resolve(training["encoder"])): info["encoder_sha256"],
                      str(resolve(training["output_dir"]) / "prepared.h5"): info["sha256"],
                      str(Path(__file__).resolve()): file_digest(__file__)})
-    bindings[str(Path(__file__).with_name("airbot_deploy.py").resolve())] = file_digest(Path(__file__).with_name("airbot_deploy.py"))
-    for folder in ("scripts/robot_control", "scripts/force_sensor", "scripts/real_deploy"):
-        for source in sorted(resolve(folder).rglob("*.py")):
-            bindings[str(source)] = file_digest(source)
+    bind_runtime_software(spec, policy, bindings)
     assert_unchanged(bindings)
     return spec, cfg, pose, policy, embedding, arrays, training, bindings
 
@@ -151,7 +148,13 @@ def envelope(position, pose, *, measured=False):
     if position.shape != (3,):
         raise StateError("Expected SDK XYZ")
     offset = position - pose["sdk_end_position_m"]
-    if (abs(offset[0]) > 0.005 or abs(offset[1]) > 0.05
+    xy_outside = abs(offset[0]) > 0.005 or abs(offset[1]) > 0.05
+    if pose.get("deployment_mode") == "manual_tared_original_v1":
+        bounds = finite_array(pose["task_xy_bounds_sdk_m"], "manual task XY bounds")
+        if bounds.shape != (2, 2) or np.any(bounds[0] >= bounds[1]):
+            raise StateError("Invalid manual task XY bounds")
+        xy_outside = np.any(position[:2] < bounds[0]) or np.any(position[:2] > bounds[1])
+    if (xy_outside
             or -offset[2] > 0.02 or offset[2] > (0.002 if measured else 1e-9)):
         raise StateError("Fixed-setup relative XYZ/depth boundary exceeded; no clipping")
 
@@ -364,7 +367,7 @@ def run_loop(robot, sensor, policy, embedding, cfg, pose, bias, stream, *, shado
             raise StateError("No fresh causal FT at policy time")
         raw = finite_array(item[1], "raw sensor FT")
         if (raw.shape != (6,) or np.linalg.norm(raw[:3]) > cfg["max_force_n"]
-                or np.linalg.norm(raw[3:]) > cfg["max_torque_nm"]):
+                or (torque_limit_enforced(cfg) and np.linalg.norm(raw[3:]) > cfg["max_torque_nm"])):
             raise StateError("Causal raw force/torque limit exceeded")
         ft = raw - bias
         filtered = loop.push(tick, ft, last["pose"]["sdk_end_position_m"])
@@ -379,7 +382,10 @@ def run_loop(robot, sensor, policy, embedding, cfg, pose, bias, stream, *, shado
         write_event(stream, {"event": "sample", "phase": "shadow" if shadow else "policy", "tick": tick,
                              "due_perf_s": due, "sensor_receive_perf_s": item[0], "raw_ft": raw.tolist(),
                              "tared_ft": ft.tolist(), "filtered_ft": filtered.tolist(),
-                             "target_sdk_m": target, "delta_h_m": loop.last_delta, **last})
+                             "target_sdk_m": target, "delta_h_m": loop.last_delta,
+                             "command_segment_speed_m_s": float(np.linalg.norm(loop.segment_end - loop.segment_start) / 0.4),
+                             "torque_limit_enforced": torque_limit_enforced(cfg),
+                             "cartesian_speed_policy": cfg.get("cartesian_speed_policy", "stop"), **last})
         sensor.flush_csv()
         if time.perf_counter() - due > DT:
             raise StateError("Fixed-setup command/logging exceeded 10 ms cycle")
@@ -433,7 +439,8 @@ def settle_at_start(robot, sensor, cfg, pose, stream, phase):
     raise StateError("Fixed-setup return/stationary timeout")
 
 
-def execute(robot, sensor, policy, embedding, cfg, pose, stream, terminal, *, shadow=False):
+def execute(robot, sensor, policy, embedding, cfg, pose, stream, terminal, *, shadow=False,
+            manual_start=False):
     attempted = False
     try:
         if not shadow:
@@ -445,14 +452,20 @@ def execute(robot, sensor, policy, embedding, cfg, pose, stream, terminal, *, sh
             for _ in range(11):
                 robot.owned()
                 state = robot.read("idle")
-                program.approach_plan(state, cfg, pose)
+                if manual_start:
+                    program.check_return_pose(state, cfg, pose)
+                else:
+                    program.approach_plan(state, cfg, pose)
                 read_force(sensor, cfg, initial=True)
                 states.append(state)
                 time.sleep(0.05)
             validate_stationary(states, max_joint_speed=0.1)
             attempted = True
             robot.enter()
-            startup_approach(robot, sensor, cfg, pose, state, stream)
+            if manual_start:
+                settle_at_start(robot, sensor, cfg, pose, stream, "manual_start_check")
+            else:
+                startup_approach(robot, sensor, cfg, pose, state, stream)
         def monitor():
             row = observation(robot, sensor, cfg, pose, pose["sdk_end_position_m"], shadow=shadow, initial=True)
             program.check_return_pose(row["pose"], cfg, pose)
@@ -490,11 +503,15 @@ def main(args):
     previous_signal = None
     torch.set_num_threads(1)
     try:
-        loaded = load_setup(args.config or "configs/real_deploy/airbot_fixed_setup.json")
+        loaded = load_setup(args.config or "configs/real_deploy/airbot_fixed_setup.json",
+                            policy_path=args.policy)
         spec, cfg, pose, policy, embedding, arrays, training, bindings = loaded
         if args.action == "replay":
             if args.output is None:
                 raise ValueError("replay requires a fresh --output directory")
+            from scripts.shared.run_paths import new_output
+
+            args.output = new_output(args.output)
             report = replay(*loaded, args.output)
             print(json.dumps(report, indent=2))
             return 0 if report["passed"] else 2
@@ -502,6 +519,8 @@ def main(args):
         if args.action == "preflight":
             print(json.dumps({"mode": MODE, "offline_inputs_valid": True, "hardware_connected": False,
                               "run_enabled": not blockers, "blockers": blockers, "scope": SCOPE,
+                              "policy": spec.get("policy"), "policy_sha256": spec.get("policy_sha256"),
+                              "training_software_differences": spec.get("training_software_differences", []),
                               "tracking_error_policy": cfg["tracking_error_policy"],
                               "orientation_error_policy": cfg["orientation_error_policy"],
                               "start_return_pose_checks": "required",
@@ -512,16 +531,15 @@ def main(args):
             raise ValueError("Run blocked: " + "; ".join(blockers))
         if not args.execute or not sys.stdin.isatty() or args.output is None:
             raise ValueError("shadow/run require --execute, an attended terminal and a fresh --output JSONL")
-        output = Path(args.output)
+        from scripts.shared.run_paths import new_output
+
+        output = new_output(args.output)
         csv = output.with_suffix(".sensor.csv")
         if output.exists() or csv.exists():
             raise FileExistsError("Output log/CSV already exists")
         terminal = program.Terminal()
-        token = "SHADOW" if shadow else "FIXED-SETUP"
         print("Shadow sends NO motion; support the idle arm." if shadow else
-              "Direct startup move after confirmation, then s starts a 10s policy including 10mm press. Independent emergency stop required.")
-        if terminal.ask(f"Type {token} to confirm this fixed installation and clear path.", lambda: None) != token:
-            return 0
+              "--execute authorizes the direct startup move after live checks, then s starts a 10s policy including 10mm press. Independent emergency stop required.")
         assert_unchanged(bindings)
         if not shadow and run_blockers(spec, bindings):
             raise ValueError("Replay/confirmations changed before connection")
